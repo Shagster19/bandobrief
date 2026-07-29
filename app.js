@@ -837,6 +837,10 @@ function normalizePilotHandle(value) {
     .slice(0, 24);
 }
 
+function authRedirectUrl() {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
 function publicPilotName(profile) {
   const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ").trim();
   return fullName || profile?.username || profile?.name || profile?.email?.split("@")[0] || "Pilot";
@@ -1045,7 +1049,19 @@ document.querySelector("#loginForm").addEventListener("submit", async event => {
   const password = String(formData.get("password"));
   if (backendReady) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { showToast(error.message); return; }
+    if (error) {
+      if (/email not confirmed/i.test(error.message)) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo: authRedirectUrl() }
+        });
+        showToast(resendError ? error.message : "Confirm your email first — a new link was sent");
+      } else {
+        showToast(error.message);
+      }
+      return;
+    }
     const profile = await remoteProfileForUser(data.user);
     savePrototypeSession(profile);
     updateAccountButton(profile);
@@ -1083,7 +1099,7 @@ document.querySelector("#signupForm").addEventListener("submit", async event => 
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
-        emailRedirectTo: "https://shagster19.github.io/bandobrief/",
+        emailRedirectTo: authRedirectUrl(),
         data: { handle: pilotHandle, first_name: String(formData.get("firstName")).trim(), last_name: String(formData.get("lastName")).trim() }
       }
     });
