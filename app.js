@@ -892,7 +892,11 @@ const authForms = [...document.querySelectorAll("[data-auth-form]")];
 
 function readPrototypeSession() {
   try {
-    const profile = JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY) || "null");
+    const storedProfile = localStorage.getItem(AUTH_SESSION_KEY) || sessionStorage.getItem(AUTH_SESSION_KEY);
+    const profile = JSON.parse(storedProfile || "null");
+    if (profile && !localStorage.getItem(AUTH_SESSION_KEY)) {
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(profile));
+    }
     if (profile && !profile.guest && !profile.username) {
       const legacyParts = String(profile.name || "").trim().split(/\s+/).filter(Boolean);
       const migratedHandle = normalizePilotHandle(profile.name)
@@ -914,7 +918,7 @@ function readPrototypeSession() {
 
 function savePrototypeSession(profile) {
   try {
-    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(profile));
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(profile));
   } catch {
     // Account preview still works for this page if storage is unavailable.
   }
@@ -1011,6 +1015,7 @@ async function hydrateRemoteSession() {
   const profile = await remoteProfileForUser(user);
   savePrototypeSession(profile);
   updateAccountButton(profile);
+  closeAuth();
   loadNearbyPilots();
 }
 
@@ -1393,6 +1398,7 @@ document.querySelector("#profileEditForm").addEventListener("submit", event => {
 document.querySelector("#signOutButton").addEventListener("click", () => {
   if (backendReady) supabase.auth.signOut();
   try {
+    localStorage.removeItem(AUTH_SESSION_KEY);
     sessionStorage.removeItem(AUTH_SESSION_KEY);
   } catch {
     // The visible account state is still reset when storage is unavailable.
@@ -1882,9 +1888,6 @@ if (!hasSharedPoint) void useCurrentLocation();
 
 const initialSession = readPrototypeSession();
 updateAccountButton(initialSession);
-if (!initialSession) {
-  setTimeout(() => openAuth("login"), 280);
-}
 
 if (location.hash === "#community") {
   document.querySelector('.view-switch button[data-view="community"]').click();
