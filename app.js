@@ -1505,9 +1505,50 @@ function makeLivePost(post) {
   }
   const footer = document.createElement("footer");
   footer.className = "post-actions";
-  footer.innerHTML = '<button class="save-post" aria-pressed="false">Save</button>';
+  footer.innerHTML = '<button class="reaction-button" data-count="0" aria-pressed="false">Like <span>0</span></button><button class="comment-toggle" type="button">Comments <span>0</span></button><button class="save-post" aria-pressed="false">Save</button>';
   article.append(footer);
+  const comments = document.createElement("section");
+  comments.className = "post-comments";
+  comments.hidden = true;
+  comments.innerHTML = '<div class="comment-list"></div><form class="comment-form"><input name="comment" maxlength="500" placeholder="Add a comment…" aria-label="Add a comment" /><button type="submit">Reply</button></form>';
+  article.append(comments);
+  loadPostEngagement(post.id, article);
   return article;
+}
+
+function renderPostComments(article, comments) {
+  const list = article.querySelector(".comment-list");
+  if (!list) return;
+  list.replaceChildren();
+  comments.forEach(comment => {
+    const item = document.createElement("p");
+    const handle = comment.profiles?.handle || "pilot";
+    item.innerHTML = '<strong></strong> <span></span>';
+    item.querySelector("strong").textContent = `@${handle}`;
+    item.querySelector("span").textContent = comment.body;
+    list.append(item);
+  });
+}
+
+async function loadPostEngagement(postId, article) {
+  if (!backendReady || !postId) return;
+  const [{ data: likeData }, { data: commentData }, { data: userData }] = await Promise.all([
+    supabase.from("post_likes").select("user_id").eq("post_id", postId),
+    supabase.from("comments").select("id, body, created_at, profiles!comments_author_id_fkey(handle)").eq("post_id", postId).order("created_at", { ascending: true }),
+    supabase.auth.getUser()
+  ]);
+  const likes = likeData || [];
+  const reaction = article.querySelector(".reaction-button");
+  const commentButton = article.querySelector(".comment-toggle");
+  if (reaction) {
+    const liked = likes.some(like => like.user_id === userData.user?.id);
+    reaction.dataset.count = String(likes.length);
+    reaction.setAttribute("aria-pressed", String(liked));
+    reaction.classList.toggle("active", liked);
+    reaction.querySelector("span").textContent = String(likes.length);
+  }
+  if (commentButton) commentButton.querySelector("span").textContent = String((commentData || []).length);
+  renderPostComments(article, commentData || []);
 }
 
 async function loadLiveCommunityPosts() {
@@ -1582,11 +1623,33 @@ document.querySelector(".feed-filters").addEventListener("click", event => {
 document.querySelector("#communityFeed").addEventListener("click", event => {
   const reaction = event.target.closest(".reaction-button");
   if (reaction) {
+    const article = reaction.closest("[data-live-post-id]");
+    if (article && backendReady) {
+      void (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { openAuth("login"); showToast("Log in to like posts"); return; }
+        const postId = article.dataset.livePostId;
+        const liked = reaction.getAttribute("aria-pressed") === "true";
+        const { error } = liked
+          ? await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id)
+          : await supabase.from("post_likes").insert({ post_id: postId, user_id: user.id });
+        if (error) { showToast("Could not update that like"); return; }
+        loadPostEngagement(postId, article);
+      })();
+      return;
+    }
     const active = reaction.getAttribute("aria-pressed") === "true";
     const base = Number(reaction.dataset.count);
     reaction.setAttribute("aria-pressed", String(!active));
     reaction.classList.toggle("active", !active);
     reaction.querySelector("span").textContent = String(base + (active ? 0 : 1));
+    return;
+  }
+
+  const commentToggle = event.target.closest(".comment-toggle");
+  if (commentToggle) {
+    const comments = commentToggle.closest("article")?.querySelector(".post-comments");
+    if (comments) comments.hidden = !comments.hidden;
     return;
   }
 
@@ -1605,6 +1668,23 @@ document.querySelector("#communityFeed").addEventListener("click", event => {
     interested.textContent = interested.classList.contains("active") ? "Going" : "Interested";
     showToast(interested.classList.contains("active") ? "Added to your community plans" : "Removed from your plans");
   }
+});
+
+document.querySelector("#communityFeed").addEventListener("submit", event => {
+  const form = event.target.closest(".comment-form");
+  if (!form) return;
+  event.preventDefault();
+  const article = form.closest("[data-live-post-id]");
+  const body = String(new FormData(form).get("comment") || "").trim();
+  if (!article || !body || !backendReady) return;
+  void (async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { openAuth("login"); showToast("Log in to comment"); return; }
+    const { error } = await supabase.from("comments").insert({ post_id: article.dataset.livePostId, author_id: user.id, body });
+    if (error) { showToast("Could not add that comment"); return; }
+    form.reset();
+    loadPostEngagement(article.dataset.livePostId, article);
+  })();
 });
 
 const initialParams = new URLSearchParams(location.search);
