@@ -52,11 +52,12 @@ let liveRequestId = 0;
 let inspectedPointRequestId = 0;
 const approximateCoordinate = value => Math.round(Number(value) * 100) / 100;
 
-function socialMarkerIcon(handle) {
+function socialMarkerIcon(handle, avatarUrl = "") {
   const initial = String(handle || "P").replace(/^@/, "").charAt(0).toUpperCase() || "P";
+  const avatar = avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="" />` : initial;
   return L.divIcon({
     className: "",
-    html: `<div class="social-map-marker">${escapeHtml(initial)}</div>`,
+    html: `<div class="social-map-marker${avatarUrl ? " has-avatar" : ""}">${avatar}</div>`,
     iconSize: [29, 29],
     iconAnchor: [14, 14]
   });
@@ -69,7 +70,7 @@ function renderNearbyPilots(pilots, currentUserId = "") {
     const lng = Number(pilot.activity_lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     const handle = pilot.handle || "pilot";
-    L.marker([lat, lng], { icon: socialMarkerIcon(handle) })
+    L.marker([lat, lng], { icon: socialMarkerIcon(handle, pilot.avatar_url) })
       .bindTooltip(`@${handle} · shared area`, { direction: "top", offset: [0, -12] })
       .bindPopup(`<div class="map-point-info"><strong>@${escapeHtml(handle)}</strong><p>Shared approximate area.</p><small>Locations are rounded for pilot privacy.</small></div>`)
       .addTo(socialGroup);
@@ -79,7 +80,7 @@ function renderNearbyPilots(pilots, currentUserId = "") {
 async function loadNearbyPilots() {
   if (!backendReady) return;
   const [{ data: pilots, error }, { data: { user } }] = await Promise.all([
-    supabase.from("profiles").select("id, handle, activity_lat, activity_lng")
+    supabase.from("profiles").select("id, handle, avatar_url, activity_lat, activity_lng")
       .eq("show_activity", true).not("activity_lat", "is", null).not("activity_lng", "is", null)
       .limit(100),
     supabase.auth.getUser()

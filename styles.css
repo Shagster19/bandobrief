@@ -926,6 +926,8 @@ button { color: inherit; }
   border: 2px solid #fff;
   border-radius: 50%;
 }
+.social-map-marker.has-avatar { overflow: hidden; color: transparent; }
+.social-map-marker.has-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .follow-pilot {
   margin-left: auto;
