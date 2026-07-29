@@ -38,8 +38,19 @@ The local reference SQL files are:
 - A pilot's saved **Home area** is geocoded with Nominatim, rounded to two decimal places, and shown as a persistent map marker when **Show nearby activity status** is enabled.
 - Clearing Home area or disabling that preference removes the marker. Markers are approximate only; exact locations are not shown.
 - Posting with an attached spot also refreshes the pilot's approximate map area.
+- Activity markers use a pilot's profile photo when available, falling back to their handle initial. They remain approximate map areas, not exact live locations.
+- The brief requests a current location when the page opens or resumes, keeps the Locate button as a manual refresh, draws an accuracy circle, and redraws map tiles after restore.
+- Pilot identity is persisted locally between browser visits; the login screen no longer opens automatically. Signing out clears the saved local profile.
+- The preflight checklist uses in-layout toggle controls to avoid browser scroll jumps.
+- The briefing now includes device-local saved launch spots, flight logs (duration, batteries, notes), flight-alert preferences, and first-visit safety onboarding.
 
 ## Recent commits
+
+- `fccc586` — Show pilot avatars on activity map
+- `2e57fdb` — Add pilot planning tools and onboarding
+- `5c2d74b` — Persist pilot sessions and stop auto-opening login
+- `ee43a92` — Refresh current location when returning to app
+- `c7812bb` — Redraw map after location updates and app restore
 
 - `a9dc65b` — Add likes for community comments
 - `626fc03` — Add pilot activity map and follows
@@ -50,6 +61,8 @@ The local reference SQL files are:
 
 - Test sign-up, login, profile editing, home-area marker persistence, privacy toggle behavior, follow/unfollow, posts, comments, likes, and media upload on desktop and mobile.
 - Existing pilots need to save their Home area once before receiving a persistent pin.
+- Saved launch spots, flight logs, alert preferences, and onboarding state are intentionally local to each browser/device; they are not Supabase-synced yet.
+- Browser geolocation requires the visitor to grant site location permission. Location accuracy varies by device/browser.
 - Supabase security advisor warnings still need deliberate follow-up:
   - `create_profile_for_user()` is a `SECURITY DEFINER` function callable by `anon` and `authenticated`; revoke execute access unless intentionally public.
   - Enable leaked-password protection in Supabase Auth.
