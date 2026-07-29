@@ -977,9 +977,9 @@ let selectedPilotAvatar = "";
 document.querySelector("#pilotAvatarInput").addEventListener("change", event => {
   const file = event.currentTarget.files?.[0];
   if (!file) return;
-  if (!/^(image\/(jpeg|png|webp))$/.test(file.type) || file.size > 2 * 1024 * 1024) {
+  if (!/^(image\/(jpeg|png|webp))$/.test(file.type) || file.size > 10 * 1024 * 1024) {
     event.currentTarget.value = "";
-    showToast("Use a JPG, PNG, or WebP image up to 2 MB");
+    showToast("Use a JPG, PNG, or WebP image up to 10 MB");
     return;
   }
   const reader = new FileReader();
@@ -994,9 +994,9 @@ document.querySelector("#profileAvatarInput").addEventListener("change", event =
   const file = event.currentTarget.files?.[0];
   const profile = readPrototypeSession();
   if (!file || !profile || profile.guest) return;
-  if (!/^(image\/(jpeg|png|webp))$/.test(file.type) || file.size > 2 * 1024 * 1024) {
+  if (!/^(image\/(jpeg|png|webp))$/.test(file.type) || file.size > 10 * 1024 * 1024) {
     event.currentTarget.value = "";
-    showToast("Use a JPG, PNG, or WebP image up to 2 MB");
+    showToast("Use a JPG, PNG, or WebP image up to 10 MB");
     return;
   }
   const reader = new FileReader();
