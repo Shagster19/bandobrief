@@ -479,11 +479,11 @@
         <form class="auth-form" id="signupForm" data-auth-form="signup" hidden>
           <div class="auth-name-row">
             <label>
-              <span>First name <small class="field-hint">Private</small></span>
+              <span>First name <small class="field-hint">Public</small></span>
               <div class="auth-input"><input type="text" name="firstName" placeholder="Alex" autocomplete="given-name" required /></div>
             </label>
             <label>
-              <span>Last name <small class="field-hint">Private</small></span>
+              <span>Last name <small class="field-hint">Public</small></span>
               <div class="auth-input"><input type="text" name="lastName" placeholder="Rivera" autocomplete="family-name" required /></div>
             </label>
           </div>
@@ -570,13 +570,14 @@
           </div>
           <form class="profile-edit-form" id="profileEditForm" hidden>
             <label><span>Pilot handle / username</span><input name="pilotHandle" type="text" pattern="@?[A-Za-z0-9._-]{3,24}" title="Use 3–24 letters, numbers, dots, dashes, or underscores" required /></label>
-            <label><span>First name · private</span><input name="firstName" type="text" autocomplete="given-name" required /></label>
-            <label><span>Last name · private</span><input name="lastName" type="text" autocomplete="family-name" required /></label>
+            <label><span>First name · public</span><input name="firstName" type="text" autocomplete="given-name" required /></label>
+            <label><span>Last name · public</span><input name="lastName" type="text" autocomplete="family-name" required /></label>
             <label><span>Home area</span><input name="home" type="text" placeholder="Philadelphia, PA" /></label>
             <label><span>Primary aircraft</span><input name="drone" type="text" placeholder="DJI Mini 4 Pro" /></label>
+            <label class="profile-photo-edit"><span>Profile picture</span><input id="profileAvatarInput" type="file" accept="image/jpeg,image/png,image/webp" /></label>
             <div><button type="button" id="cancelProfileEdit">Cancel</button><button type="submit">Save profile</button></div>
           </form>
-          <p class="profile-private-line">Private account: <strong id="profilePrivateName">Not added</strong> · <span id="profileEmail">pilot@example.com</span></p>
+          <p class="profile-private-line">Account email: <span id="profileEmail">pilot@example.com</span></p>
         </section>
 
         <section class="profile-section">

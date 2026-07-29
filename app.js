@@ -813,6 +813,11 @@ function normalizePilotHandle(value) {
     .slice(0, 24);
 }
 
+function publicPilotName(profile) {
+  const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ").trim();
+  return fullName || profile?.username || profile?.name || profile?.email?.split("@")[0] || "Pilot";
+}
+
 function applyPilotImage(element, image, fallback) {
   element.textContent = fallback;
   element.classList.toggle("has-photo", Boolean(image));
@@ -822,7 +827,7 @@ function applyPilotImage(element, image, fallback) {
 function updateAccountButton(profile) {
   const isPilot = profile && !profile.guest;
   const name = isPilot
-    ? profile.username || profile.name || profile.email.split("@")[0]
+    ? publicPilotName(profile)
     : "Log in";
   document.querySelector("#accountLabel").textContent = name;
   applyPilotImage(document.querySelector("#accountAvatar"), profile?.avatar, isPilot ? name.trim().charAt(0).toUpperCase() : "P");
@@ -897,13 +902,12 @@ function closeAuth() {
 function renderPilotProfile(profile) {
   if (!profile || profile.guest) return;
   const username = profile.username || profile.name || profile.email?.split("@")[0] || "pilot";
-  const initial = username.trim().charAt(0).toUpperCase();
+  const displayName = publicPilotName(profile);
+  const initial = displayName.trim().charAt(0).toUpperCase();
   applyPilotImage(document.querySelector("#profileAvatar"), profile.avatar, initial);
-  document.querySelector("#profileName").textContent = username;
+  document.querySelector("#profileName").textContent = displayName;
   document.querySelector("#profileHandle").textContent = `@${username}`;
   document.querySelector("#profileEmail").textContent = profile.email || "Local pilot profile";
-  document.querySelector("#profilePrivateName").textContent =
-    [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Not added";
   document.querySelector("#profileHome").textContent = profile.home || "Not added";
   document.querySelector("#profileDrone").textContent = profile.drone || "Not added";
   document.querySelector("#profileHideExact").checked = profile.hideExact !== false;
@@ -982,6 +986,26 @@ document.querySelector("#pilotAvatarInput").addEventListener("change", event => 
   reader.addEventListener("load", () => {
     selectedPilotAvatar = String(reader.result);
     applyPilotImage(document.querySelector("#pilotPhotoPreview"), selectedPilotAvatar, "P");
+  });
+  reader.readAsDataURL(file);
+});
+
+document.querySelector("#profileAvatarInput").addEventListener("change", event => {
+  const file = event.currentTarget.files?.[0];
+  const profile = readPrototypeSession();
+  if (!file || !profile || profile.guest) return;
+  if (!/^(image\/(jpeg|png|webp))$/.test(file.type) || file.size > 2 * 1024 * 1024) {
+    event.currentTarget.value = "";
+    showToast("Use a JPG, PNG, or WebP image up to 2 MB");
+    return;
+  }
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    const updated = { ...profile, avatar: String(reader.result) };
+    savePrototypeSession(updated);
+    updateAccountButton(updated);
+    renderPilotProfile(updated);
+    showToast("Profile picture updated");
   });
   reader.readAsDataURL(file);
 });
@@ -1265,13 +1289,12 @@ function makeUserPost(message, media = []) {
   const header = document.createElement("header");
   header.className = "post-author";
   const profile = readPrototypeSession();
-  const username = profile && !profile.guest
-    ? profile.username || profile.name || "localpilot"
-    : "guestpilot";
+  const username = profile && !profile.guest ? profile.username || profile.name || "localpilot" : "guestpilot";
+  const displayName = profile && !profile.guest ? publicPilotName(profile) : "Guest pilot";
   header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · now · <span>Approximate area</span></p></div><button aria-label="Post options">•••</button>';
-  header.querySelector(".pilot-avatar").textContent = username.charAt(0).toUpperCase();
-  applyPilotImage(header.querySelector(".pilot-avatar"), profile?.avatar, username.charAt(0).toUpperCase());
-  header.querySelector("strong").textContent = username;
+  header.querySelector(".pilot-avatar").textContent = displayName.charAt(0).toUpperCase();
+  applyPilotImage(header.querySelector(".pilot-avatar"), profile?.avatar, displayName.charAt(0).toUpperCase());
+  header.querySelector("strong").textContent = displayName;
   header.querySelector(".post-handle").textContent = `@${username}`;
 
   const copy = document.createElement("p");
@@ -1326,11 +1349,12 @@ function makeLivePost(post) {
   article.dataset.category = "nearby";
   article.dataset.livePostId = post.id;
   const handle = post.profiles?.handle || "pilot";
+  const displayName = [post.profiles?.first_name, post.profiles?.last_name].filter(Boolean).join(" ") || handle;
   const header = document.createElement("header");
   header.className = "post-author";
   header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · <span class="post-time"></span></p></div><button aria-label="Post options">•••</button>';
-  applyPilotImage(header.querySelector(".pilot-avatar"), "", handle.charAt(0).toUpperCase());
-  header.querySelector("strong").textContent = handle;
+  applyPilotImage(header.querySelector(".pilot-avatar"), "", displayName.charAt(0).toUpperCase());
+  header.querySelector("strong").textContent = displayName;
   header.querySelector(".post-handle").textContent = `@${handle}`;
   header.querySelector(".post-time").textContent = new Date(post.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   const copy = document.createElement("p");
@@ -1367,7 +1391,7 @@ async function loadLiveCommunityPosts() {
   if (!backendReady) return;
   const { data, error } = await supabase
     .from("posts")
-    .select("id, body, area_label, media, created_at, profiles!posts_author_id_fkey(handle)")
+    .select("id, body, area_label, media, created_at, profiles!posts_author_id_fkey(handle, first_name, last_name)")
     .order("created_at", { ascending: false })
     .limit(30);
   if (error) { console.error(error); return; }

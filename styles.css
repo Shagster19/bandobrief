@@ -1352,6 +1352,9 @@ button { color: inherit; }
 .profile-edit-form button { padding: 7px 11px; border: 0; border-radius: 8px; font-size: 8px; font-weight: 800; cursor: pointer; }
 .profile-edit-form button:first-child { color: #6f8085; background: #edf2f0; }
 .profile-edit-form button:last-child { color: #fff; background: var(--navy); }
+.profile-photo-edit { grid-column: 1 / -1; }
+.profile-photo-edit input[type="file"] { height: auto; padding: 8px; font-size: 8px; }
+.profile-photo-edit input::file-selector-button { margin-right: 8px; padding: 5px 8px; color: #e5faf5; background: #245e59; border: 0; border-radius: 5px; font: 800 8px "DM Sans", sans-serif; cursor: pointer; }
 .profile-private-line { margin: 12px 0 0; color: #89979b; font-size: 7.5px; line-height: 1.45; }
 .profile-private-line strong { color: #64767b; font-weight: 700; }
 .privacy-first-chip { padding: 5px 8px; color: var(--teal); background: var(--teal-soft); border-radius: 999px; font-size: 7px !important; text-transform: uppercase; letter-spacing: .06em; }
