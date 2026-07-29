@@ -1552,6 +1552,38 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
 .pilot-photo-picker input { width: 88px; color: #aee8dc; font-size: 8px; }
 .pilot-photo-picker input::file-selector-button { margin-right: 5px; padding: 5px 7px; color: #dffaf3; background: #245e59; border: 0; border-radius: 5px; font: 800 8px "DM Sans", sans-serif; cursor: pointer; }
 .account-avatar.has-photo, .profile-avatar.has-photo, .pilot-avatar.has-photo { background-position: center; background-size: cover; color: transparent !important; }
+
+/* Contrast audit: every interactive and information surface uses the dark palette. */
+.brand-mark, .primary-action, .auth-submit, .post-button, .feed-filters button.active,
+.meetup-date, .toast, .profile-edit-form button:last-child { color: #ffffff; background: #176660; }
+.primary-action:hover, .auth-submit:hover, .post-button:hover { background: #238178; }
+.privacy-card { color: #bce7de; background: #153733; border-color: #2f6d65; }
+.privacy-card p, .privacy-card.off { color: #a1c2c0; }
+.privacy-card.off { background: #263438; border-color: #40575c; }
+.privacy-icon { background: #1d4a46; }
+.feed-card { background: #14242a; border-color: #294149; }
+.meetup-card { background: linear-gradient(135deg, #153531, #182a30); border-color: #315158; }
+.post-copy { color: #d5e8e4; }
+.post-author p, .post-author > button, .post-actions button, .meetup-card p { color: #9db5b7; }
+.shared-spot { background: #172a30; border-color: #2f4d53; }
+.spot-map-art { filter: brightness(.72) saturate(.75); }
+.spot-map-art em { color: #d9eeea; background: rgba(12, 31, 36, .88); }
+.spot-details > p { color: #9bb1b2; }
+.spot-details > div span, .post-tags span { color: #a9d8d0; background: #1b403e; }
+.interested-button { color: #9cebdd; background: #173a38; border-color: #3c8278; }
+.pilot-avatar { border-color: #14242a; }
+.nearby-pilots strong { color: #b9d0cf; background: #263d42; border-color: #14242a; }
+.auth-close { color: #b9d2d0; background: #1b3036; border-color: #355158; }
+.auth-heading p, .auth-tabs button, .auth-form .field-hint, .auth-check, .auth-local-note, .guest-button { color: #a9c1c1; }
+.auth-check > span { background: #102027; border-color: #557077; }
+.guest-button { border-color: #527276; }
+.profile-stats, .profile-section { background: #14242a; }
+.profile-section-title p, .profile-details small, .profile-private-line, .profile-setting small, .profile-actions p { color: #9db3b5; }
+.profile-private-line strong { color: #c3d9d7; }
+.profile-setting i { background: #385157; }
+.profile-setting i::after { background: #d9eeea; }
+dialog p, .status-card p, .notice p, .metric p, .metric small, .metric strong em,
+.section-title > span, .legal-note { color: #9db5b7; }
 .profile-card { background: #0f1d22; }
 .profile-details > div { background: #172a30; border-color: #2d474d; }
 .profile-edit-form input { color: var(--ink); background: #172a30; border-color: #355158; }
