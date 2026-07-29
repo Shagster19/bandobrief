@@ -813,15 +813,21 @@ function normalizePilotHandle(value) {
     .slice(0, 24);
 }
 
+function applyPilotImage(element, image, fallback) {
+  element.textContent = fallback;
+  element.classList.toggle("has-photo", Boolean(image));
+  element.style.backgroundImage = image ? `url("${image}")` : "";
+}
+
 function updateAccountButton(profile) {
   const isPilot = profile && !profile.guest;
   const name = isPilot
     ? profile.username || profile.name || profile.email.split("@")[0]
     : "Log in";
   document.querySelector("#accountLabel").textContent = name;
-  document.querySelector("#accountAvatar").textContent = isPilot
-    ? name.trim().charAt(0).toUpperCase()
-    : "P";
+  applyPilotImage(document.querySelector("#accountAvatar"), profile?.avatar, isPilot ? name.trim().charAt(0).toUpperCase() : "P");
+  const composerAvatar = document.querySelector(".composer-main .pilot-avatar.self");
+  if (composerAvatar) applyPilotImage(composerAvatar, profile?.avatar, isPilot ? name.trim().charAt(0).toUpperCase() : "P");
   accountButton.setAttribute("aria-label", isPilot ? `Account for ${name}` : "Log in or create an account");
 }
 
@@ -892,7 +898,7 @@ function renderPilotProfile(profile) {
   if (!profile || profile.guest) return;
   const username = profile.username || profile.name || profile.email?.split("@")[0] || "pilot";
   const initial = username.trim().charAt(0).toUpperCase();
-  document.querySelector("#profileAvatar").textContent = initial;
+  applyPilotImage(document.querySelector("#profileAvatar"), profile.avatar, initial);
   document.querySelector("#profileName").textContent = username;
   document.querySelector("#profileHandle").textContent = `@${username}`;
   document.querySelector("#profileEmail").textContent = profile.email || "Local pilot profile";
@@ -963,6 +969,23 @@ document.querySelectorAll(".password-toggle").forEach(button => {
   });
 });
 
+let selectedPilotAvatar = "";
+document.querySelector("#pilotAvatarInput").addEventListener("change", event => {
+  const file = event.currentTarget.files?.[0];
+  if (!file) return;
+  if (!/^(image\/(jpeg|png|webp))$/.test(file.type) || file.size > 2 * 1024 * 1024) {
+    event.currentTarget.value = "";
+    showToast("Use a JPG, PNG, or WebP image up to 2 MB");
+    return;
+  }
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    selectedPilotAvatar = String(reader.result);
+    applyPilotImage(document.querySelector("#pilotPhotoPreview"), selectedPilotAvatar, "P");
+  });
+  reader.readAsDataURL(file);
+});
+
 document.querySelector("#loginForm").addEventListener("submit", async event => {
   event.preventDefault();
   const formData = new FormData(event.currentTarget);
@@ -1028,12 +1051,15 @@ document.querySelector("#signupForm").addEventListener("submit", async event => 
     username: pilotHandle,
     name: pilotHandle,
     firstName: String(formData.get("firstName")).trim(),
-    lastName: String(formData.get("lastName")).trim()
+    lastName: String(formData.get("lastName")).trim(),
+    avatar: selectedPilotAvatar
   };
   savePrototypeSession(profile);
   updateAccountButton(profile);
   event.currentTarget.querySelector('input[name="password"]').value = "";
   closeAuth();
+  selectedPilotAvatar = "";
+  applyPilotImage(document.querySelector("#pilotPhotoPreview"), "", "P");
   showToast(`Welcome to BandoBrief, @${pilotHandle}`);
 });
 
@@ -1240,6 +1266,7 @@ function makeUserPost(message, media = []) {
     : "guestpilot";
   header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · now · <span>Approximate area</span></p></div><button aria-label="Post options">•••</button>';
   header.querySelector(".pilot-avatar").textContent = username.charAt(0).toUpperCase();
+  applyPilotImage(header.querySelector(".pilot-avatar"), profile?.avatar, username.charAt(0).toUpperCase());
   header.querySelector("strong").textContent = username;
   header.querySelector(".post-handle").textContent = `@${username}`;
 

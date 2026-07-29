@@ -494,6 +494,14 @@
               <input type="text" name="pilotHandle" placeholder="SkylineFPV" autocomplete="username" pattern="@?[A-Za-z0-9._-]{3,24}" title="Use 3–24 letters, numbers, dots, dashes, or underscores" required />
             </div>
           </label>
+          <label class="pilot-photo-field">
+            <span>Pilot photo or logo <small class="field-hint">Public · optional</small></span>
+            <div class="pilot-photo-picker">
+              <span class="pilot-photo-preview" id="pilotPhotoPreview">P</span>
+              <div><strong>Add your pilot card image</strong><small>JPG, PNG, or WebP · up to 2 MB</small></div>
+              <input id="pilotAvatarInput" type="file" name="pilotAvatar" accept="image/jpeg,image/png,image/webp" />
+            </div>
+          </label>
           <label>
             <span>Email address</span>
             <div class="auth-input">

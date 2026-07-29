@@ -1543,6 +1543,15 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
 .auth-input input::placeholder, .composer-main textarea::placeholder { color: #8fa7aa; opacity: 1; }
 .auth-form label > span:first-child, .profile-edit-form label > span { color: #b9cbc9; }
 .auth-input svg { stroke: #79c3b5; }
+.pilot-photo-field { display: block; }
+.pilot-photo-picker { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 9px; background: #172a30; border: 1px dashed #477078; border-radius: 11px; }
+.pilot-photo-preview { width: 40px; height: 40px; display: grid; place-items: center; overflow: hidden; color: #eafff7; background: #1d5552 center / cover no-repeat; border-radius: 10px; font: 800 12px "Manrope", sans-serif; }
+.pilot-photo-picker strong, .pilot-photo-picker small { display: block; }
+.pilot-photo-picker strong { color: #dff4ef; font-size: 9px; }
+.pilot-photo-picker small { margin-top: 3px; color: #90aaac; font-size: 8px; }
+.pilot-photo-picker input { width: 88px; color: #aee8dc; font-size: 8px; }
+.pilot-photo-picker input::file-selector-button { margin-right: 5px; padding: 5px 7px; color: #dffaf3; background: #245e59; border: 0; border-radius: 5px; font: 800 8px "DM Sans", sans-serif; cursor: pointer; }
+.account-avatar.has-photo, .profile-avatar.has-photo, .pilot-avatar.has-photo { background-position: center; background-size: cover; color: transparent !important; }
 .profile-card { background: #0f1d22; }
 .profile-details > div { background: #172a30; border-color: #2d474d; }
 .profile-edit-form input { color: var(--ink); background: #172a30; border-color: #355158; }
