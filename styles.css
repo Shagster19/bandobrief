@@ -215,7 +215,10 @@ button { color: inherit; }
   height: calc(100vh - 72px);
   overflow: hidden;
   background: #dfe8e5;
-  border: 3px solid #b9cbc8;
+  box-sizing: border-box;
+  border: 12px solid #b9cbc8;
+  border-radius: 16px;
+  box-shadow: 0 14px 32px rgba(13, 36, 43, .18);
 }
 #map { width: 100%; height: 100%; background: #dfe8e5; }
 #map::after {
@@ -1531,7 +1534,7 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
 .account-button, .metric, .notice, .checklist, .composer, .post, .meetup-card,
 .profile-stats, .profile-section, dialog { background: var(--surface); }
 .account-button:hover { border-color: #4e867e; }
-.map-stage { border-color: #36545b; }
+.map-stage { border-color: #29464d; box-shadow: 0 14px 32px rgba(0, 0, 0, .32); }
 .map-stage, #map { background: #172a30; }
 .leaflet-tile-pane { filter: saturate(.45) contrast(1.05) brightness(.6) hue-rotate(12deg); }
 .leaflet-control-attribution, .leaflet-control-zoom a { color: #b7cfca !important; background: rgba(16, 34, 39, .92) !important; }
