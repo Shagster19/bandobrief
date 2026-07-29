@@ -1392,7 +1392,7 @@ if (location.hash === "#community") {
 
 if ("serviceWorker" in navigator && import.meta.env?.PROD && !window.Capacitor?.isNativePlatform?.()) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
       // The app remains usable online if offline support cannot initialize.
     });
   });

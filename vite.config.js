@@ -13,7 +13,7 @@ const staticWorker = () => ({
 
 export default defineConfig({
   plugins: [staticWorker()],
-  base: "./",
+  base: process.env.GITHUB_ACTIONS ? "/bandobrief/" : "./",
   server: {
     port: 5173,
     strictPort: true
