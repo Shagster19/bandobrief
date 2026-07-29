@@ -674,6 +674,17 @@ document.querySelector("#searchForm").addEventListener("submit", async event => 
   }
 });
 
+function useLocatedPosition(position) {
+  const lat = Number(position?.coords?.latitude);
+  const lng = Number(position?.coords?.longitude);
+  const isUsable = Number.isFinite(lat) && Number.isFinite(lng)
+    && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
+    && (lat !== 0 || lng !== 0);
+  if (!isUsable) return false;
+  updateBriefing(lat, lng, "Current location");
+  return true;
+}
+
 async function useCurrentLocation() {
   showToast("Finding your location…");
 
@@ -686,11 +697,11 @@ async function useCurrentLocation() {
         return;
       }
       const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 60000
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
       });
-      updateBriefing(position.coords.latitude, position.coords.longitude, "Current location");
+      if (!useLocatedPosition(position)) throw new Error("Invalid location result");
       return;
     } catch (error) {
       showToast("Location access was unavailable");
@@ -704,9 +715,11 @@ async function useCurrentLocation() {
   }
 
   navigator.geolocation.getCurrentPosition(
-    position => updateBriefing(position.coords.latitude, position.coords.longitude, "Current location"),
+    position => {
+      if (!useLocatedPosition(position)) showToast("Your current location could not be determined");
+    },
     () => showToast("Location access was unavailable"),
-    { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
 }
 
