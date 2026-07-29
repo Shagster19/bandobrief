@@ -594,7 +594,10 @@ function updateBriefing(lat, lng, name, moveMap = true) {
   document.querySelector("#coordinateReadout").innerHTML = friendlyCoords(lat, lng);
 
   launchMarker.setLatLng([lat, lng]);
-  if (moveMap) map.flyTo([lat, lng], 12, { duration: 0.7 });
+  if (moveMap) {
+    map.invalidateSize({ pan: false });
+    map.flyTo([lat, lng], 12, { duration: 0.7 });
+  }
   refreshRealData();
 }
 
@@ -1886,6 +1889,13 @@ if (!initialSession) {
 if (location.hash === "#community") {
   document.querySelector('.view-switch button[data-view="community"]').click();
 }
+
+window.addEventListener("pageshow", () => {
+  requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+});
 
 if ("serviceWorker" in navigator && import.meta.env?.PROD && !window.Capacitor?.isNativePlatform?.()) {
   window.addEventListener("load", () => {
