@@ -548,28 +548,19 @@ button { color: inherit; }
 .progress-track { height: 4px; overflow: hidden; background: #e6ecea; border-radius: 999px; }
 .progress-track i { display: block; width: 25%; height: 100%; background: var(--teal); border-radius: 999px; transition: width .25s; }
 .checklist { display: grid; gap: 11px; margin-top: 14px; }
-.checklist label { position: relative; display: flex; gap: 10px; align-items: center; color: #586c72; font-size: 11px; cursor: pointer; }
-.checklist input {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  opacity: 0;
-  transform: translateY(-50%);
-}
-.checklist label > span {
-  width: 16px; height: 16px; flex: 0 0 auto; display: grid; place-items: center;
+.checklist label { display: flex; gap: 10px; align-items: center; color: #586c72; font-size: 11px; cursor: pointer; }
+.check-control {
+  width: 16px; height: 16px; flex: 0 0 auto; display: grid; place-items: center; padding: 0;
   background: #fff; border: 1.5px solid #b6c4c1; border-radius: 5px;
+  cursor: pointer;
 }
-.checklist input:checked + span { background: var(--teal); border-color: var(--teal); }
-.checklist input:checked + span::after {
+.check-control[aria-checked="true"] { background: var(--teal); border-color: var(--teal); }
+.check-control[aria-checked="true"]::after {
   content: ""; width: 6px; height: 3px; transform: rotate(-45deg) translateY(-1px);
   border-left: 1.5px solid white; border-bottom: 1.5px solid white;
 }
-.checklist input:focus-visible + span { outline: 2px solid var(--teal); outline-offset: 2px; }
-.checklist input:checked ~ * { color: #809095; text-decoration: line-through; }
+.check-control:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.checklist label.complete { color: #809095; text-decoration: line-through; }
 
 .flight-plan-block .section-title { align-items: flex-start; }
 .flight-plan-block .section-title > div > span { display: block; margin-top: 3px; }

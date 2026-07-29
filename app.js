@@ -788,8 +788,8 @@ function saveFlightPlan() {
 }
 
 function updateChecklistProgress() {
-  const boxes = [...document.querySelectorAll(".checklist input")];
-  const completed = boxes.filter(box => box.checked).length;
+  const boxes = [...document.querySelectorAll(".checklist .check-control")];
+  const completed = boxes.filter(box => box.getAttribute("aria-checked") === "true").length;
   const allComplete = completed === boxes.length;
   document.querySelector("#checkProgress").textContent = `${completed} of ${boxes.length}`;
   document.querySelector("#progressFill").style.width = `${completed / boxes.length * 100}%`;
@@ -805,7 +805,12 @@ function renderLatestReview() {
   reviewRecord.textContent = `Last recorded: ${latest.location} · ${new Date(latest.recordedAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
 }
 
-document.querySelectorAll(".checklist input").forEach(input => input.addEventListener("change", updateChecklistProgress));
+document.querySelectorAll(".checklist .check-control").forEach(button => button.addEventListener("click", () => {
+  const checked = button.getAttribute("aria-checked") === "true";
+  button.setAttribute("aria-checked", String(!checked));
+  button.closest("label").classList.toggle("complete", !checked);
+  updateChecklistProgress();
+}));
 document.querySelector("#saveBriefButton").addEventListener("click", saveFlightPlan);
 document.querySelector("#savedPlanList").addEventListener("click", event => {
   const id = event.target.dataset.deletePlan;
