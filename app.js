@@ -50,29 +50,6 @@ let currentPoint = { ...defaultPoint };
 let liveRequestId = 0;
 let inspectedPointRequestId = 0;
 
-function makeSocialMarkers(lat, lng) {
-  socialGroup.clearLayers();
-  const pilots = [
-    { initial: "M", lat: lat + 0.018, lng: lng - 0.025, label: "Maya · active nearby" },
-    { initial: "J", lat: lat - 0.024, lng: lng + 0.031, label: "Jon · flying later" },
-    { initial: "R", lat: lat + 0.034, lng: lng + 0.019, label: "Rico · shared a spot" }
-  ];
-
-  pilots.forEach(pilot => {
-    const icon = L.divIcon({
-      className: "",
-      html: `<div class="social-map-marker">${pilot.initial}</div>`,
-      iconSize: [29, 29],
-      iconAnchor: [14, 14]
-    });
-    L.marker([pilot.lat, pilot.lng], { icon })
-      .bindTooltip(pilot.label, { direction: "top", offset: [0, -12] })
-      .addTo(socialGroup);
-  });
-}
-
-makeSocialMarkers(defaultPoint.lat, defaultPoint.lng);
-
 const radians = value => value * Math.PI / 180;
 
 function distanceMiles(a, b) {
@@ -552,7 +529,6 @@ function updateBriefing(lat, lng, name, moveMap = true) {
   document.querySelector("#coordinateReadout").innerHTML = friendlyCoords(lat, lng);
 
   launchMarker.setLatLng([lat, lng]);
-  makeSocialMarkers(lat, lng);
   if (moveMap) map.flyTo([lat, lng], 12, { duration: 0.7 });
   refreshRealData();
 }
@@ -1451,7 +1427,10 @@ async function loadLiveCommunityPosts() {
   if (error) { console.error(error); return; }
   const feed = document.querySelector("#communityFeed");
   [...data].reverse().forEach(post => {
-    if (!feed.querySelector(`[data-live-post-id="${post.id}"]`)) feed.prepend(makeLivePost(post));
+    if (!feed.querySelector(`[data-live-post-id="${post.id}"]`)) {
+      feed.querySelector("#communityEmpty")?.remove();
+      feed.prepend(makeLivePost(post));
+    }
   });
 }
 
@@ -1482,7 +1461,9 @@ postButton.addEventListener("click", async () => {
     }
   }
   const post = makeUserPost(message, media);
-  document.querySelector("#communityFeed").prepend(post);
+  const feed = document.querySelector("#communityFeed");
+  feed.querySelector("#communityEmpty")?.remove();
+  feed.prepend(post);
   postInput.value = "";
   selectedMedia = [];
   renderMediaPreview();

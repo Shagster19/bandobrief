@@ -251,12 +251,6 @@
               <h1>Community</h1>
               <p>See what local pilots are sharing.</p>
             </div>
-            <div class="nearby-pilots" title="12 pilots active nearby">
-              <span class="pilot-avatar mint">M</span>
-              <span class="pilot-avatar gold">J</span>
-              <span class="pilot-avatar blue">R</span>
-              <strong>+9</strong>
-            </div>
           </div>
 
           <section class="privacy-card">
@@ -309,6 +303,8 @@
           </div>
 
           <div class="community-feed" id="communityFeed">
+            <p class="community-empty" id="communityEmpty">No posts yet. Be the first pilot to share an update.</p>
+            <template>
             <article class="feed-card" data-category="spots nearby">
               <header class="post-author">
                 <span class="pilot-avatar mint">M</span>
@@ -389,6 +385,7 @@
               </div>
               <button class="interested-button">Interested</button>
             </article>
+            </template>
           </div>
 
           <p class="legal-note community-note">Respect property, people, and local rules. Shared spots are community suggestions—not permission to launch.</p>

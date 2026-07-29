@@ -769,6 +769,7 @@ button { color: inherit; }
 .feed-filters button.active { color: #fff; background: var(--navy); border-color: var(--navy); }
 
 .community-feed { display: grid; gap: 10px; }
+.community-empty { margin: 0; padding: 22px 16px; color: #9db5b7; background: #10242a; border: 1px dashed #35525a; border-radius: 10px; text-align: center; font-size: 11px; }
 .feed-card, .meetup-card {
   padding: 13px;
   background: #fff;
