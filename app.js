@@ -831,21 +831,25 @@ function savePrototypeSession(profile) {
 }
 
 function savePendingSignup(profile) {
-  try { sessionStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify(profile)); } catch { /* Optional photo may be added after verification. */ }
+  try { localStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify(profile)); } catch { /* Optional photo may be added after verification. */ }
 }
 
 function readPendingSignup() {
-  try { return JSON.parse(sessionStorage.getItem(PENDING_SIGNUP_KEY) || "null"); } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(PENDING_SIGNUP_KEY) || "null"); } catch { return null; }
 }
 
 async function finishPendingSignup(user) {
   const pending = readPendingSignup();
   if (!pending || pending.email !== user?.email) return;
   const update = { handle: pending.username, first_name: pending.firstName, last_name: pending.lastName };
-  if (pending.avatar) update.avatar_url = await uploadProfileAvatar(user.id, pending.avatar);
   const { error } = await supabase.from("profiles").update(update).eq("id", user.id);
   if (error) throw error;
-  try { sessionStorage.removeItem(PENDING_SIGNUP_KEY); } catch { /* Nothing to clear. */ }
+  if (pending.avatar) {
+    const avatarUrl = await uploadProfileAvatar(user.id, pending.avatar);
+    await supabase.auth.updateUser({ data: { ...user.user_metadata, avatar_url: avatarUrl } });
+    await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("id", user.id);
+  }
+  try { localStorage.removeItem(PENDING_SIGNUP_KEY); } catch { /* Nothing to clear. */ }
 }
 
 function normalizePilotHandle(value) {
@@ -888,7 +892,7 @@ function updateAccountButton(profile) {
 
 async function remoteProfileForUser(user) {
   if (!backendReady || !user) return null;
-  const { data } = await supabase.from("profiles").select("handle, first_name, last_name, avatar_url, home, drone, hide_exact_location, show_activity").eq("id", user.id).maybeSingle();
+  const { data } = await supabase.from("profiles").select("handle, first_name, last_name, home, drone, hide_exact_location, show_activity").eq("id", user.id).maybeSingle();
   return {
     id: user.id,
     guest: false,
@@ -897,7 +901,7 @@ async function remoteProfileForUser(user) {
     name: data?.handle || normalizePilotHandle(user.user_metadata?.handle || user.email?.split("@")[0]),
     firstName: data?.first_name || "",
     lastName: data?.last_name || "",
-    avatar: data?.avatar_url || "",
+    avatar: user.user_metadata?.avatar_url || "",
     home: data?.home || "",
     drone: data?.drone || "",
     hideExact: data?.hide_exact_location !== false,
@@ -1081,21 +1085,32 @@ document.querySelector("#loginForm").addEventListener("submit", async event => {
   submitButton.disabled = true;
   submitButton.textContent = "Signing in…";
   if (backendReady) {
+    let data;
+    let error;
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        if (/email not confirmed/i.test(error.message)) {
-          const { error: resendError } = await supabase.auth.resend({
-            type: "signup",
-            email,
-            options: { emailRedirectTo: authRedirectUrl() }
-          });
-          showToast(resendError ? error.message : "Confirm your email first — a new link was sent");
-        } else {
-          showToast(error.message);
-        }
-        return;
+      ({ data, error } = await supabase.auth.signInWithPassword({ email, password }));
+    } catch {
+      showToast("Could not reach secure sign-in. Check your connection and try again.");
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+      return;
+    }
+    if (error) {
+      if (/email not confirmed/i.test(error.message)) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo: authRedirectUrl() }
+        });
+        showToast(resendError ? error.message : "Confirm your email first — a new link was sent");
+      } else {
+        showToast(error.message);
       }
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+      return;
+    }
+    try {
       const profile = await remoteProfileForUser(data.user);
       savePrototypeSession(profile);
       updateAccountButton(profile);
@@ -1103,7 +1118,15 @@ document.querySelector("#loginForm").addEventListener("submit", async event => {
       closeAuth();
       showToast(`Welcome back, ${profile.name}`);
     } catch {
-      showToast("Could not reach secure sign-in. Check your connection and try again.");
+      const fallbackProfile = {
+        id: data.user.id, guest: false, email: data.user.email,
+        username: normalizePilotHandle(data.user.user_metadata?.handle || data.user.email?.split("@")[0]),
+        name: normalizePilotHandle(data.user.user_metadata?.handle || data.user.email?.split("@")[0])
+      };
+      savePrototypeSession(fallbackProfile);
+      updateAccountButton(fallbackProfile);
+      closeAuth();
+      showToast("Welcome back");
     } finally {
       submitButton.disabled = false;
       submitButton.textContent = originalText;
