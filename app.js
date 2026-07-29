@@ -1030,7 +1030,10 @@ document.querySelector("#signupForm").addEventListener("submit", async event => 
     if (pilotHandle.length < 3) { showToast("Choose a pilot handle with at least 3 characters"); return; }
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { handle: pilotHandle, first_name: String(formData.get("firstName")).trim(), last_name: String(formData.get("lastName")).trim() } }
+      options: {
+        emailRedirectTo: "https://shagster19.github.io/bandobrief/",
+        data: { handle: pilotHandle, first_name: String(formData.get("firstName")).trim(), last_name: String(formData.get("lastName")).trim() }
+      }
     });
     if (error) { showToast(error.message); return; }
     if (data.session) {
