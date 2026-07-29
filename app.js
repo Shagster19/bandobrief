@@ -818,6 +818,11 @@ function publicPilotName(profile) {
   return fullName || profile?.username || profile?.name || profile?.email?.split("@")[0] || "Pilot";
 }
 
+function pilotHandleLabel(profile) {
+  const handle = profile?.username || profile?.name || profile?.email?.split("@")[0] || "pilot";
+  return `@${normalizePilotHandle(handle) || "pilot"}`;
+}
+
 function applyPilotImage(element, image, fallback) {
   element.textContent = fallback;
   element.classList.toggle("has-photo", Boolean(image));
@@ -826,9 +831,7 @@ function applyPilotImage(element, image, fallback) {
 
 function updateAccountButton(profile) {
   const isPilot = profile && !profile.guest;
-  const name = isPilot
-    ? publicPilotName(profile)
-    : "Log in";
+  const name = isPilot ? pilotHandleLabel(profile) : "Log in";
   document.querySelector("#accountLabel").textContent = name;
   applyPilotImage(document.querySelector("#accountAvatar"), profile?.avatar, isPilot ? name.trim().charAt(0).toUpperCase() : "P");
   const composerAvatar = document.querySelector(".composer-main .pilot-avatar.self");
@@ -902,11 +905,12 @@ function closeAuth() {
 function renderPilotProfile(profile) {
   if (!profile || profile.guest) return;
   const username = profile.username || profile.name || profile.email?.split("@")[0] || "pilot";
-  const displayName = publicPilotName(profile);
-  const initial = displayName.trim().charAt(0).toUpperCase();
+  const handleLabel = pilotHandleLabel(profile);
+  const realName = [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim() || "Pilot name not added";
+  const initial = username.trim().charAt(0).toUpperCase();
   applyPilotImage(document.querySelector("#profileAvatar"), profile.avatar, initial);
-  document.querySelector("#profileName").textContent = displayName;
-  document.querySelector("#profileHandle").textContent = `@${username}`;
+  document.querySelector("#profileName").textContent = handleLabel;
+  document.querySelector("#profileHandle").textContent = realName;
   document.querySelector("#profileEmail").textContent = profile.email || "Local pilot profile";
   document.querySelector("#profileHome").textContent = profile.home || "Not added";
   document.querySelector("#profileDrone").textContent = profile.drone || "Not added";
@@ -1290,12 +1294,13 @@ function makeUserPost(message, media = []) {
   header.className = "post-author";
   const profile = readPrototypeSession();
   const username = profile && !profile.guest ? profile.username || profile.name || "localpilot" : "guestpilot";
-  const displayName = profile && !profile.guest ? publicPilotName(profile) : "Guest pilot";
+  const displayName = profile && !profile.guest ? pilotHandleLabel(profile) : "@guestpilot";
+  const realName = profile && !profile.guest ? publicPilotName(profile) : "Guest pilot";
   header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · now · <span>Approximate area</span></p></div><button aria-label="Post options">•••</button>';
   header.querySelector(".pilot-avatar").textContent = displayName.charAt(0).toUpperCase();
   applyPilotImage(header.querySelector(".pilot-avatar"), profile?.avatar, displayName.charAt(0).toUpperCase());
   header.querySelector("strong").textContent = displayName;
-  header.querySelector(".post-handle").textContent = `@${username}`;
+  header.querySelector(".post-handle").textContent = realName;
 
   const copy = document.createElement("p");
   copy.className = "post-copy";
@@ -1349,13 +1354,14 @@ function makeLivePost(post) {
   article.dataset.category = "nearby";
   article.dataset.livePostId = post.id;
   const handle = post.profiles?.handle || "pilot";
-  const displayName = [post.profiles?.first_name, post.profiles?.last_name].filter(Boolean).join(" ") || handle;
+  const displayName = `@${handle}`;
+  const realName = [post.profiles?.first_name, post.profiles?.last_name].filter(Boolean).join(" ") || "Pilot";
   const header = document.createElement("header");
   header.className = "post-author";
   header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · <span class="post-time"></span></p></div><button aria-label="Post options">•••</button>';
   applyPilotImage(header.querySelector(".pilot-avatar"), "", displayName.charAt(0).toUpperCase());
   header.querySelector("strong").textContent = displayName;
-  header.querySelector(".post-handle").textContent = `@${handle}`;
+  header.querySelector(".post-handle").textContent = realName;
   header.querySelector(".post-time").textContent = new Date(post.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   const copy = document.createElement("p");
   copy.className = "post-copy";
