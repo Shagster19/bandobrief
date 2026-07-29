@@ -1,4 +1,4 @@
-import { backendReady, supabase, uploadPostMedia } from "./backend.js";
+import { backendReady, supabase, uploadPostMedia, uploadProfileAvatar } from "./backend.js";
 
 const defaultPoint = { lat: 39.9526, lng: -75.1652, name: "Philadelphia, PA" };
 
@@ -793,6 +793,7 @@ document.querySelector("#closeDialog").addEventListener("click", () => dialog.cl
 document.querySelector("#dialogGotIt").addEventListener("click", () => dialog.close());
 
 const AUTH_SESSION_KEY = "bandobrief.prototype.session";
+const PENDING_SIGNUP_KEY = "bandobrief.pending-signup";
 const authScreen = document.querySelector("#authScreen");
 const profileScreen = document.querySelector("#profileScreen");
 const accountButton = document.querySelector("#accountButton");
@@ -827,6 +828,24 @@ function savePrototypeSession(profile) {
   } catch {
     // Account preview still works for this page if storage is unavailable.
   }
+}
+
+function savePendingSignup(profile) {
+  try { sessionStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify(profile)); } catch { /* Optional photo may be added after verification. */ }
+}
+
+function readPendingSignup() {
+  try { return JSON.parse(sessionStorage.getItem(PENDING_SIGNUP_KEY) || "null"); } catch { return null; }
+}
+
+async function finishPendingSignup(user) {
+  const pending = readPendingSignup();
+  if (!pending || pending.email !== user?.email) return;
+  const update = { handle: pending.username, first_name: pending.firstName, last_name: pending.lastName };
+  if (pending.avatar) update.avatar_url = await uploadProfileAvatar(user.id, pending.avatar);
+  const { error } = await supabase.from("profiles").update(update).eq("id", user.id);
+  if (error) throw error;
+  try { sessionStorage.removeItem(PENDING_SIGNUP_KEY); } catch { /* Nothing to clear. */ }
 }
 
 function normalizePilotHandle(value) {
@@ -869,7 +888,7 @@ function updateAccountButton(profile) {
 
 async function remoteProfileForUser(user) {
   if (!backendReady || !user) return null;
-  const { data } = await supabase.from("profiles").select("handle, first_name, last_name, home, drone, hide_exact_location, show_activity").eq("id", user.id).maybeSingle();
+  const { data } = await supabase.from("profiles").select("handle, first_name, last_name, avatar_url, home, drone, hide_exact_location, show_activity").eq("id", user.id).maybeSingle();
   return {
     id: user.id,
     guest: false,
@@ -878,6 +897,7 @@ async function remoteProfileForUser(user) {
     name: data?.handle || normalizePilotHandle(user.user_metadata?.handle || user.email?.split("@")[0]),
     firstName: data?.first_name || "",
     lastName: data?.last_name || "",
+    avatar: data?.avatar_url || "",
     home: data?.home || "",
     drone: data?.drone || "",
     hideExact: data?.hide_exact_location !== false,
@@ -889,9 +909,16 @@ async function hydrateRemoteSession() {
   if (!backendReady) return;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
+  try { await finishPendingSignup(user); } catch (error) { console.error("Could not finish pilot profile", error); }
   const profile = await remoteProfileForUser(user);
   savePrototypeSession(profile);
   updateAccountButton(profile);
+}
+
+if (backendReady) {
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) hydrateRemoteSession();
+  });
 }
 
 function switchAuthView(view) {
@@ -1111,6 +1138,13 @@ document.querySelector("#signupForm").addEventListener("submit", async event => 
   const password = String(formData.get("password"));
   if (backendReady) {
     if (pilotHandle.length < 3) { showToast("Choose a pilot handle with at least 3 characters"); return; }
+    savePendingSignup({
+      email,
+      username: pilotHandle,
+      firstName: String(formData.get("firstName")).trim(),
+      lastName: String(formData.get("lastName")).trim(),
+      avatar: selectedPilotAvatar
+    });
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
@@ -1120,6 +1154,7 @@ document.querySelector("#signupForm").addEventListener("submit", async event => 
     });
     if (error) { showToast(error.message); return; }
     if (data.session) {
+      try { await finishPendingSignup(data.user); } catch (profileError) { console.error(profileError); }
       const profile = await remoteProfileForUser(data.user);
       savePrototypeSession(profile);
       updateAccountButton(profile);

@@ -4,7 +4,7 @@ create extension if not exists pgcrypto;
 create table public.profiles (
   id uuid primary key references auth.users on delete cascade,
   handle text unique not null check (handle ~ '^[A-Za-z0-9._-]{3,24}$'),
-  first_name text default '', last_name text default '', home text default '', drone text default '',
+  first_name text default '', last_name text default '', avatar_url text, home text default '', drone text default '',
   hide_exact_location boolean not null default true, show_activity boolean not null default true,
   created_at timestamptz not null default now()
 );
