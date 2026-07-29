@@ -852,6 +852,9 @@ button { color: inherit; }
 .comment-list { display: grid; gap: 7px; }
 .comment-list p { margin: 0; color: #b9cdcd; font-size: 10px; line-height: 1.4; }
 .comment-list strong { color: #77d3c1; }
+.comment-like { margin-left: 5px; padding: 0; color: #86aaa8; background: transparent; border: 0; font: 800 8px "DM Sans", sans-serif; cursor: pointer; }
+.comment-like.active { color: #79d7c5; }
+.comment-like i { font-style: normal; }
 .comment-form { display: flex; gap: 7px; margin-top: 9px; }
 .comment-form input { min-width: 0; flex: 1; padding: 8px 9px; color: var(--ink); background: #172a30; border: 1px solid #355158; border-radius: 7px; font: 600 10px "DM Sans", sans-serif; }
 .comment-form button { padding: 7px 10px; color: #e5faf5; background: #245e59; border: 1px solid #3b9d8f; border-radius: 7px; font: 800 9px "DM Sans", sans-serif; cursor: pointer; }

@@ -1516,16 +1516,23 @@ function makeLivePost(post) {
   return article;
 }
 
-function renderPostComments(article, comments) {
+function renderPostComments(article, comments, likes = [], userId = "") {
   const list = article.querySelector(".comment-list");
   if (!list) return;
   list.replaceChildren();
   comments.forEach(comment => {
     const item = document.createElement("p");
     const handle = comment.profiles?.handle || "pilot";
-    item.innerHTML = '<strong></strong> <span></span>';
+    const commentLikes = likes.filter(like => like.comment_id === comment.id);
+    const liked = commentLikes.some(like => like.user_id === userId);
+    item.innerHTML = '<strong></strong> <span></span> <button class="comment-like" type="button" data-comment-id="" aria-pressed="false">Like <i>0</i></button>';
     item.querySelector("strong").textContent = `@${handle}`;
     item.querySelector("span").textContent = comment.body;
+    const button = item.querySelector(".comment-like");
+    button.dataset.commentId = comment.id;
+    button.setAttribute("aria-pressed", String(liked));
+    button.classList.toggle("active", liked);
+    button.querySelector("i").textContent = String(commentLikes.length);
     list.append(item);
   });
 }
@@ -1548,7 +1555,12 @@ async function loadPostEngagement(postId, article) {
     reaction.querySelector("span").textContent = String(likes.length);
   }
   if (commentButton) commentButton.querySelector("span").textContent = String((commentData || []).length);
-  renderPostComments(article, commentData || []);
+  const comments = commentData || [];
+  const commentIds = comments.map(comment => comment.id);
+  const { data: commentLikeData } = commentIds.length
+    ? await supabase.from("comment_likes").select("comment_id, user_id").in("comment_id", commentIds)
+    : { data: [] };
+  renderPostComments(article, comments, commentLikeData || [], userData.user?.id || "");
 }
 
 async function loadLiveCommunityPosts() {
@@ -1621,6 +1633,21 @@ document.querySelector(".feed-filters").addEventListener("click", event => {
 });
 
 document.querySelector("#communityFeed").addEventListener("click", event => {
+  const commentLike = event.target.closest(".comment-like");
+  if (commentLike && backendReady) {
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { openAuth("login"); showToast("Log in to like comments"); return; }
+      const liked = commentLike.getAttribute("aria-pressed") === "true";
+      const { error } = liked
+        ? await supabase.from("comment_likes").delete().eq("comment_id", commentLike.dataset.commentId).eq("user_id", user.id)
+        : await supabase.from("comment_likes").insert({ comment_id: commentLike.dataset.commentId, user_id: user.id });
+      if (error) { showToast("Could not update that comment like"); return; }
+      const article = commentLike.closest("[data-live-post-id]");
+      if (article) loadPostEngagement(article.dataset.livePostId, article);
+    })();
+    return;
+  }
   const reaction = event.target.closest(".reaction-button");
   if (reaction) {
     const article = reaction.closest("[data-live-post-id]");
