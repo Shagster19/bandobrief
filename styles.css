@@ -1537,8 +1537,12 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
 .post-button:disabled { color: #71868b; background: #26383d; }
 .auth-form-panel { background: #0f1d22; }
 .auth-tabs { background: #13262d; border-color: #294149; }
-.auth-tabs button.active, .auth-field input { color: var(--ink); background: #1b3036; border-color: #355158; box-shadow: none; }
-.auth-field label, .profile-edit-form label > span { color: #b9cbc9; }
+.auth-tabs button.active { color: var(--ink); background: #1b3036; box-shadow: none; }
+.auth-input, .composer-card { background: #172a30; border-color: #355158; box-shadow: none; }
+.auth-input input, .composer-main textarea { color: #edf7f4; }
+.auth-input input::placeholder, .composer-main textarea::placeholder { color: #8fa7aa; opacity: 1; }
+.auth-form label > span:first-child, .profile-edit-form label > span { color: #b9cbc9; }
+.auth-input svg { stroke: #79c3b5; }
 .profile-card { background: #0f1d22; }
 .profile-details > div { background: #172a30; border-color: #2d474d; }
 .profile-edit-form input { color: var(--ink); background: #172a30; border-color: #355158; }
