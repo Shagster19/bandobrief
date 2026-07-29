@@ -892,7 +892,11 @@ function updateAccountButton(profile) {
 
 async function remoteProfileForUser(user) {
   if (!backendReady || !user) return null;
-  const { data } = await supabase.from("profiles").select("handle, first_name, last_name, home, drone, hide_exact_location, show_activity").eq("id", user.id).maybeSingle();
+  const profileFields = "handle, first_name, last_name, avatar_url, home, drone, hide_exact_location, show_activity";
+  let { data, error } = await supabase.from("profiles").select(profileFields).eq("id", user.id).maybeSingle();
+  if (error && /avatar_url/i.test(error.message || "")) {
+    ({ data } = await supabase.from("profiles").select("handle, first_name, last_name, home, drone, hide_exact_location, show_activity").eq("id", user.id).maybeSingle());
+  }
   return {
     id: user.id,
     guest: false,
@@ -901,7 +905,7 @@ async function remoteProfileForUser(user) {
     name: data?.handle || normalizePilotHandle(user.user_metadata?.handle || user.email?.split("@")[0]),
     firstName: data?.first_name || "",
     lastName: data?.last_name || "",
-    avatar: user.user_metadata?.avatar_url || "",
+    avatar: data?.avatar_url || user.user_metadata?.avatar_url || "",
     home: data?.home || "",
     drone: data?.drone || "",
     hideExact: data?.hide_exact_location !== false,
@@ -1472,7 +1476,7 @@ function makeLivePost(post) {
   const header = document.createElement("header");
   header.className = "post-author";
   header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · <span class="post-time"></span></p></div><button aria-label="Post options">•••</button>';
-  applyPilotImage(header.querySelector(".pilot-avatar"), "", displayName.charAt(0).toUpperCase());
+  applyPilotImage(header.querySelector(".pilot-avatar"), post.profiles?.avatar_url || "", displayName.charAt(0).toUpperCase());
   header.querySelector("strong").textContent = displayName;
   header.querySelector(".post-handle").textContent = realName;
   header.querySelector(".post-time").textContent = new Date(post.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -1510,7 +1514,7 @@ async function loadLiveCommunityPosts() {
   if (!backendReady) return;
   const { data, error } = await supabase
     .from("posts")
-    .select("id, body, area_label, media, created_at, profiles!posts_author_id_fkey(handle, first_name, last_name)")
+    .select("id, body, area_label, media, created_at, profiles!posts_author_id_fkey(handle, first_name, last_name, avatar_url)")
     .order("created_at", { ascending: false })
     .limit(30);
   if (error) { console.error(error); return; }
