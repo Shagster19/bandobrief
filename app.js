@@ -878,12 +878,12 @@ function applyPilotImage(element, image, fallback) {
 
 function updateAccountButton(profile) {
   const isPilot = profile && !profile.guest;
-  const name = isPilot ? pilotHandleLabel(profile) : "Log in";
+  const name = isPilot ? pilotHandleLabel(profile) : "Create account";
   document.querySelector("#accountLabel").textContent = name;
   applyPilotImage(document.querySelector("#accountAvatar"), profile?.avatar, isPilot ? name.trim().charAt(0).toUpperCase() : "P");
   const composerAvatar = document.querySelector(".composer-main .pilot-avatar.self");
   if (composerAvatar) applyPilotImage(composerAvatar, profile?.avatar, isPilot ? name.trim().charAt(0).toUpperCase() : "P");
-  accountButton.setAttribute("aria-label", isPilot ? `Account for ${name}` : "Log in or create an account");
+  accountButton.setAttribute("aria-label", isPilot ? `Account for ${name}` : "Create an account or log in");
 }
 
 async function remoteProfileForUser(user) {
@@ -1013,7 +1013,7 @@ accountButton.addEventListener("click", () => {
   if (profile && !profile.guest) {
     openPilotProfile();
   } else {
-    openAuth("login");
+    openAuth("signup");
   }
 });
 document.querySelector("#authClose").addEventListener("click", continueAsGuest);
