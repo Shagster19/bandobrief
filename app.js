@@ -1356,6 +1356,7 @@ document.querySelector("#signOutButton").addEventListener("click", () => {
 });
 
 hydrateRemoteSession();
+loadNearbyPilots();
 
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !profileScreen.hidden) closePilotProfile();
