@@ -1,4 +1,4 @@
-const CACHE_NAME = "bandobrief-shell-v1";
+const CACHE_NAME = "bandobrief-shell-v2";
 const APP_SHELL = ["./", "./manifest.webmanifest", "./icons/icon.svg"];
 
 self.addEventListener("install", event => {
@@ -16,6 +16,7 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+  if (new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
     fetch(event.request)
       .then(response => {
