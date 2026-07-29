@@ -1166,6 +1166,7 @@ viewButtons.forEach(button => {
 
     if (showCommunity) {
       socialGroup.removeFrom(map);
+      loadLiveCommunityPosts();
       showToast("Community is now a full-page view");
     } else {
       socialGroup.removeFrom(map);
@@ -1314,6 +1315,63 @@ function makeUserPost(message, media = []) {
     </button>`;
   article.append(footer);
   return article;
+}
+
+function makeLivePost(post) {
+  const article = document.createElement("article");
+  article.className = "feed-card compact-post";
+  article.dataset.category = "nearby";
+  article.dataset.livePostId = post.id;
+  const handle = post.profiles?.handle || "pilot";
+  const header = document.createElement("header");
+  header.className = "post-author";
+  header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · <span class="post-time"></span></p></div><button aria-label="Post options">•••</button>';
+  applyPilotImage(header.querySelector(".pilot-avatar"), "", handle.charAt(0).toUpperCase());
+  header.querySelector("strong").textContent = handle;
+  header.querySelector(".post-handle").textContent = `@${handle}`;
+  header.querySelector(".post-time").textContent = new Date(post.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const copy = document.createElement("p");
+  copy.className = "post-copy";
+  copy.textContent = post.body;
+  article.append(header, copy);
+  if (Array.isArray(post.media) && post.media.length) {
+    const gallery = document.createElement("div");
+    gallery.className = "post-media-grid";
+    post.media.forEach(item => {
+      const element = document.createElement(item.type?.startsWith("video/") ? "video" : "img");
+      element.src = item.url;
+      if (element.tagName === "VIDEO") { element.controls = true; element.playsInline = true; }
+      else element.alt = "Community post attachment";
+      gallery.append(element);
+    });
+    article.append(gallery);
+  }
+  if (post.area_label) {
+    const area = document.createElement("div");
+    area.className = "attached-spot";
+    area.innerHTML = '<span>◎</span> Approximate area near <strong></strong>';
+    area.querySelector("strong").textContent = post.area_label;
+    article.append(area);
+  }
+  const footer = document.createElement("footer");
+  footer.className = "post-actions";
+  footer.innerHTML = '<button class="save-post" aria-pressed="false">Save</button>';
+  article.append(footer);
+  return article;
+}
+
+async function loadLiveCommunityPosts() {
+  if (!backendReady) return;
+  const { data, error } = await supabase
+    .from("posts")
+    .select("id, body, area_label, media, created_at, profiles!posts_author_id_fkey(handle)")
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (error) { console.error(error); return; }
+  const feed = document.querySelector("#communityFeed");
+  [...data].reverse().forEach(post => {
+    if (!feed.querySelector(`[data-live-post-id="${post.id}"]`)) feed.prepend(makeLivePost(post));
+  });
 }
 
 postButton.addEventListener("click", async () => {
