@@ -45,10 +45,60 @@ const launchMarker = L.marker([defaultPoint.lat, defaultPoint.lng], {
 const overlayGroup = L.layerGroup().addTo(map);
 const facilityGridGroup = L.layerGroup().addTo(overlayGroup);
 const airportGroup = L.layerGroup().addTo(overlayGroup);
-const socialGroup = L.layerGroup();
+const socialGroup = L.layerGroup().addTo(map);
 let currentPoint = { ...defaultPoint };
 let liveRequestId = 0;
 let inspectedPointRequestId = 0;
+const ACTIVITY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const approximateCoordinate = value => Math.round(Number(value) * 100) / 100;
+
+function socialMarkerIcon(handle) {
+  const initial = String(handle || "P").replace(/^@/, "").charAt(0).toUpperCase() || "P";
+  return L.divIcon({
+    className: "",
+    html: `<div class="social-map-marker">${escapeHtml(initial)}</div>`,
+    iconSize: [29, 29],
+    iconAnchor: [14, 14]
+  });
+}
+
+function renderNearbyPilots(pilots, currentUserId = "") {
+  socialGroup.clearLayers();
+  pilots.filter(pilot => pilot.id !== currentUserId).forEach(pilot => {
+    const lat = Number(pilot.activity_lat);
+    const lng = Number(pilot.activity_lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const handle = pilot.handle || "pilot";
+    L.marker([lat, lng], { icon: socialMarkerIcon(handle) })
+      .bindTooltip(`@${handle} · active nearby`, { direction: "top", offset: [0, -12] })
+      .bindPopup(`<div class="map-point-info"><strong>@${escapeHtml(handle)}</strong><p>Active in this approximate area.</p><small>Locations are rounded for pilot privacy.</small></div>`)
+      .addTo(socialGroup);
+  });
+}
+
+async function loadNearbyPilots() {
+  if (!backendReady) return;
+  const since = new Date(Date.now() - ACTIVITY_WINDOW_MS).toISOString();
+  const [{ data: pilots, error }, { data: { user } }] = await Promise.all([
+    supabase.from("profiles").select("id, handle, activity_lat, activity_lng")
+      .eq("show_activity", true).not("activity_lat", "is", null).not("activity_lng", "is", null)
+      .gte("activity_updated_at", since).limit(100),
+    supabase.auth.getUser()
+  ]);
+  if (error) { console.error("Could not load nearby pilot activity", error); return; }
+  renderNearbyPilots(pilots || [], user?.id || "");
+}
+
+async function shareApproximateActivity(user, profile) {
+  if (!backendReady || !user || profile?.showActivity === false) return;
+  const { error } = await supabase.from("profiles").update({
+    activity_lat: approximateCoordinate(currentPoint.lat),
+    activity_lng: approximateCoordinate(currentPoint.lng),
+    activity_updated_at: new Date().toISOString()
+  }).eq("id", user.id);
+  if (error) throw error;
+  await loadNearbyPilots();
+}
 
 const radians = value => value * Math.PI / 180;
 
@@ -921,6 +971,7 @@ async function hydrateRemoteSession() {
   const profile = await remoteProfileForUser(user);
   savePrototypeSession(profile);
   updateAccountButton(profile);
+  loadNearbyPilots();
 }
 
 if (backendReady) {
@@ -1252,6 +1303,15 @@ document.querySelector("#profileEditForm").addEventListener("submit", event => {
     drone: String(formData.get("drone")).trim()
   };
   savePrototypeSession(updated);
+  if (backendReady) {
+    supabase.from("profiles").update({
+      handle: updated.username,
+      first_name: updated.firstName,
+      last_name: updated.lastName,
+      home: updated.home,
+      drone: updated.drone
+    }).eq("id", updated.id).then(({ error }) => error && console.error("Could not save pilot profile", error));
+  }
   updateAccountButton(updated);
   renderPilotProfile(updated);
   event.currentTarget.hidden = true;
@@ -1270,6 +1330,14 @@ document.querySelector("#profileEditForm").addEventListener("submit", event => {
       showActivity: document.querySelector("#profileShowActivity").checked
     };
     savePrototypeSession(updated);
+    if (backendReady) {
+      const update = { hide_exact_location: updated.hideExact, show_activity: updated.showActivity };
+      if (!updated.showActivity) Object.assign(update, { activity_lat: null, activity_lng: null, activity_updated_at: null });
+      supabase.from("profiles").update(update).eq("id", updated.id).then(({ error }) => {
+        if (error) console.error("Could not save privacy preference", error);
+        else loadNearbyPilots();
+      });
+    }
     if (id === "profileHideExact") renderPilotProfile(updated);
     showToast("Privacy preference saved for this session");
   });
@@ -1317,7 +1385,8 @@ viewButtons.forEach(button => {
       loadLiveCommunityPosts();
       showToast("Community is now a full-page view");
     } else {
-      socialGroup.removeFrom(map);
+      socialGroup.addTo(map);
+      loadNearbyPilots();
       setTimeout(() => map.invalidateSize(), 50);
     }
     history.replaceState(null, "", showCommunity ? "#community" : "#brief");
@@ -1475,11 +1544,14 @@ function makeLivePost(post) {
   const realName = [post.profiles?.first_name, post.profiles?.last_name].filter(Boolean).join(" ") || "Pilot";
   const header = document.createElement("header");
   header.className = "post-author";
-  header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · <span class="post-time"></span></p></div><button aria-label="Post options">•••</button>';
+  header.innerHTML = '<span class="pilot-avatar self"></span><div><strong></strong><p><span class="post-handle"></span> · <span class="post-time"></span></p></div><button class="follow-pilot" type="button" data-following-id="">Follow</button><button aria-label="Post options">•••</button>';
   applyPilotImage(header.querySelector(".pilot-avatar"), post.profiles?.avatar_url || "", displayName.charAt(0).toUpperCase());
   header.querySelector("strong").textContent = displayName;
   header.querySelector(".post-handle").textContent = realName;
   header.querySelector(".post-time").textContent = new Date(post.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const followButton = header.querySelector(".follow-pilot");
+  followButton.dataset.followingId = post.author_id;
+  void loadFollowState(followButton, post.author_id);
   const copy = document.createElement("p");
   copy.className = "post-copy";
   copy.textContent = post.body;
@@ -1514,6 +1586,18 @@ function makeLivePost(post) {
   article.append(comments);
   loadPostEngagement(post.id, article);
   return article;
+}
+
+async function loadFollowState(button, followingId) {
+  if (!backendReady || !followingId) { button.hidden = true; return; }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || user.id === followingId) { button.hidden = true; return; }
+  const { data } = await supabase.from("follows").select("follower_id")
+    .eq("follower_id", user.id).eq("following_id", followingId).maybeSingle();
+  const following = Boolean(data);
+  button.textContent = following ? "Following" : "Follow";
+  button.classList.toggle("active", following);
+  button.setAttribute("aria-pressed", String(following));
 }
 
 function renderPostComments(article, comments, likes = [], userId = "") {
@@ -1567,7 +1651,7 @@ async function loadLiveCommunityPosts() {
   if (!backendReady) return;
   const { data, error } = await supabase
     .from("posts")
-    .select("id, body, area_label, media, created_at, profiles!posts_author_id_fkey(handle, first_name, last_name, avatar_url)")
+    .select("id, author_id, body, area_label, media, created_at, profiles!posts_author_id_fkey(handle, first_name, last_name, avatar_url)")
     .order("created_at", { ascending: false })
     .limit(30);
   if (error) { console.error(error); return; }
@@ -1598,6 +1682,7 @@ postButton.addEventListener("click", async () => {
         hide_exact_location: document.querySelector("#privacyButton").getAttribute("aria-pressed") === "true"
       });
       if (error) throw error;
+      if (spotAttached) await shareApproximateActivity(user, readPrototypeSession());
     } catch (error) {
       console.error(error);
       postButton.textContent = originalText;
@@ -1633,6 +1718,25 @@ document.querySelector(".feed-filters").addEventListener("click", event => {
 });
 
 document.querySelector("#communityFeed").addEventListener("click", event => {
+  const followButton = event.target.closest(".follow-pilot");
+  if (followButton && backendReady) {
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { openAuth("login"); showToast("Log in to follow pilots"); return; }
+      const followingId = followButton.dataset.followingId;
+      if (!followingId || followingId === user.id) return;
+      const following = followButton.getAttribute("aria-pressed") === "true";
+      const { error } = following
+        ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", followingId)
+        : await supabase.from("follows").insert({ follower_id: user.id, following_id: followingId });
+      if (error) { showToast("Could not update that follow"); return; }
+      followButton.textContent = following ? "Follow" : "Following";
+      followButton.classList.toggle("active", !following);
+      followButton.setAttribute("aria-pressed", String(!following));
+      showToast(following ? "Unfollowed pilot" : "Following pilot");
+    })();
+    return;
+  }
   const commentLike = event.target.closest(".comment-like");
   if (commentLike && backendReady) {
     void (async () => {
