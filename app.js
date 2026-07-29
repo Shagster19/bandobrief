@@ -677,6 +677,8 @@ document.querySelector("#searchForm").addEventListener("submit", async event => 
   }
 });
 
+let lastLocationAttemptAt = 0;
+
 function useLocatedPosition(position) {
   const lat = Number(position?.coords?.latitude);
   const lng = Number(position?.coords?.longitude);
@@ -688,7 +690,10 @@ function useLocatedPosition(position) {
   return true;
 }
 
-async function useCurrentLocation() {
+async function useCurrentLocation({ force = false } = {}) {
+  const now = Date.now();
+  if (!force && now - lastLocationAttemptAt < 5000) return;
+  lastLocationAttemptAt = now;
   showToast("Finding your location…");
 
   if (window.Capacitor?.isNativePlatform?.()) {
@@ -727,7 +732,7 @@ async function useCurrentLocation() {
 }
 
 document.querySelector("#locateButton").addEventListener("click", () => {
-  void useCurrentLocation();
+  void useCurrentLocation({ force: true });
 });
 
 let overlaysVisible = true;
@@ -1884,7 +1889,6 @@ const initialPoint = hasSharedPoint
   : defaultPoint;
 
 updateBriefing(initialPoint.lat, initialPoint.lng, initialPoint.name, hasSharedPoint);
-if (!hasSharedPoint) void useCurrentLocation();
 
 const initialSession = readPrototypeSession();
 updateAccountButton(initialSession);
@@ -1895,9 +1899,13 @@ if (location.hash === "#community") {
 
 window.addEventListener("pageshow", () => {
   requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+  if (!hasSharedPoint) void useCurrentLocation();
 });
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+  if (!document.hidden) {
+    requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+    if (!hasSharedPoint) void useCurrentLocation();
+  }
 });
 
 if ("serviceWorker" in navigator && import.meta.env?.PROD && !window.Capacitor?.isNativePlatform?.()) {
