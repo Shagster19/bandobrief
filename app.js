@@ -46,6 +46,7 @@ const overlayGroup = L.layerGroup().addTo(map);
 const facilityGridGroup = L.layerGroup().addTo(overlayGroup);
 const airportGroup = L.layerGroup().addTo(overlayGroup);
 const socialGroup = L.layerGroup().addTo(map);
+let locationAccuracyCircle = null;
 let currentPoint = { ...defaultPoint };
 let liveRequestId = 0;
 let inspectedPointRequestId = 0;
@@ -686,6 +687,9 @@ function useLocatedPosition(position) {
     && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
     && (lat !== 0 || lng !== 0);
   if (!isUsable) return false;
+  const accuracy = Math.min(Math.max(Number(position.coords.accuracy) || 0, 0), 10000);
+  if (locationAccuracyCircle) map.removeLayer(locationAccuracyCircle);
+  if (accuracy) locationAccuracyCircle = L.circle([lat, lng], { radius: accuracy, color: "#52c6b3", fillColor: "#52c6b3", fillOpacity: .12, weight: 1 }).addTo(map);
   updateBriefing(lat, lng, "Current location");
   return true;
 }
@@ -748,6 +752,9 @@ document.querySelector("#layersButton").addEventListener("click", event => {
 
 const FLIGHT_PLANS_KEY = "bandobrief.prototype.flight-plans";
 const REVIEW_RECORDS_KEY = "bandobrief.prototype.preflight-reviews";
+const SAVED_SPOTS_KEY = "bandobrief.saved-spots";
+const FLIGHT_LOGS_KEY = "bandobrief.flight-logs";
+const ALERTS_KEY = "bandobrief.alert-preferences";
 const planDateInput = document.querySelector("#planDate");
 const planTimeInput = document.querySelector("#planTime");
 const reviewButton = document.querySelector("#recordReviewButton");
@@ -786,6 +793,33 @@ function renderSavedPlans() {
       <div><strong>${escapeHtml(plan.location)}</strong><small>${plan.altitude} ft AGL · ${formatPlanDate(plan.date, plan.time)}</small></div>
       <button type="button" data-delete-plan="${plan.id}" aria-label="Delete saved plan for ${escapeHtml(plan.location)}">Delete</button>
     </article>`).join("");
+}
+
+function renderPilotList(key, elementId, emptyText, formatter) {
+  const items = readLocalList(key);
+  const list = document.querySelector(elementId);
+  if (!items.length) { list.innerHTML = `<p class="saved-plan-empty">${emptyText}</p>`; return; }
+  list.innerHTML = items.map(item => `<article class="saved-plan"><div>${formatter(item)}</div><button type="button" data-remove-local="${key}" data-id="${item.id}">Delete</button></article>`).join("");
+}
+
+function renderPilotTools() {
+  renderPilotList(SAVED_SPOTS_KEY, "#savedSpotList", "No saved launch spots yet.", spot => `<strong>${escapeHtml(spot.name)}</strong><small>${friendlyCoords(spot.lat, spot.lng)}</small>`);
+  renderPilotList(FLIGHT_LOGS_KEY, "#flightLogList", "No flight logs yet.", log => `<strong>${escapeHtml(log.location)} · ${log.duration} min</strong><small>${log.batteries || 0} batteries${log.notes ? ` · ${escapeHtml(log.notes)}` : ""}</small>`);
+}
+
+function saveCurrentSpot() {
+  const spots = readLocalList(SAVED_SPOTS_KEY);
+  if (spots.some(spot => Math.abs(spot.lat - currentPoint.lat) < .0001 && Math.abs(spot.lng - currentPoint.lng) < .0001)) { showToast("This launch spot is already saved"); return; }
+  spots.unshift({ id: crypto.randomUUID(), name: currentPoint.name || "Dropped pin", lat: currentPoint.lat, lng: currentPoint.lng });
+  writeLocalList(SAVED_SPOTS_KEY, spots.slice(0, 20)); renderPilotTools(); showToast("Launch spot saved");
+}
+
+function saveFlightLog() {
+  const duration = Number(document.querySelector("#logDuration").value);
+  if (!Number.isFinite(duration) || duration < 1) { showToast("Add a flight duration to save the log"); return; }
+  const logs = readLocalList(FLIGHT_LOGS_KEY);
+  logs.unshift({ id: crypto.randomUUID(), location: currentPoint.name || "Dropped pin", duration, batteries: Number(document.querySelector("#logBatteries").value) || 0, notes: document.querySelector("#logNotes").value.trim(), createdAt: new Date().toISOString() });
+  writeLocalList(FLIGHT_LOGS_KEY, logs.slice(0, 30)); document.querySelector("#flightLogForm").reset(); renderPilotTools(); showToast("Flight log saved");
 }
 
 function saveFlightPlan() {
@@ -837,6 +871,18 @@ document.querySelectorAll(".checklist .check-control").forEach(button => button.
   updateChecklistProgress();
 }));
 document.querySelector("#saveBriefButton").addEventListener("click", saveFlightPlan);
+document.querySelector("#saveSpotButton").addEventListener("click", saveCurrentSpot);
+document.querySelector("#saveLogButton").addEventListener("click", saveFlightLog);
+document.querySelectorAll("#savedSpotList, #flightLogList").forEach(list => list.addEventListener("click", event => {
+  const button = event.target.closest("[data-remove-local]");
+  if (!button) return;
+  writeLocalList(button.dataset.removeLocal, readLocalList(button.dataset.removeLocal).filter(item => item.id !== button.dataset.id));
+  renderPilotTools();
+}));
+document.querySelectorAll("#alertWeather, #alertAirspace").forEach(input => input.addEventListener("change", () => {
+  writeLocalList(ALERTS_KEY, [{ weather: document.querySelector("#alertWeather").checked, airspace: document.querySelector("#alertAirspace").checked }]);
+  showToast("Flight alert preferences saved");
+}));
 document.querySelector("#savedPlanList").addEventListener("click", event => {
   const id = event.target.dataset.deletePlan;
   if (!id) return;
@@ -856,6 +902,9 @@ const prototypeNow = new Date();
 planDateInput.value = prototypeNow.toISOString().slice(0, 10);
 planTimeInput.value = prototypeNow.toTimeString().slice(0, 5);
 renderSavedPlans();
+const alertPreferences = readLocalList(ALERTS_KEY)[0];
+if (alertPreferences) { document.querySelector("#alertWeather").checked = alertPreferences.weather !== false; document.querySelector("#alertAirspace").checked = alertPreferences.airspace !== false; }
+renderPilotTools();
 renderLatestReview();
 updateChecklistProgress();
 
@@ -1892,6 +1941,14 @@ updateBriefing(initialPoint.lat, initialPoint.lng, initialPoint.name, hasSharedP
 
 const initialSession = readPrototypeSession();
 updateAccountButton(initialSession);
+
+const ONBOARDING_KEY = "bandobrief.onboarding-complete";
+const onboardingCard = document.querySelector("#onboardingCard");
+if (!localStorage.getItem(ONBOARDING_KEY)) onboardingCard.hidden = false;
+document.querySelector("#onboardingDone").addEventListener("click", () => {
+  localStorage.setItem(ONBOARDING_KEY, "true");
+  onboardingCard.hidden = true;
+});
 
 if (location.hash === "#community") {
   document.querySelector('.view-switch button[data-view="community"]').click();

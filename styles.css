@@ -450,6 +450,10 @@ button { color: inherit; }
 .status-card strong { display: block; color: var(--ink); font-size: 14.5px; }
 .status-card p { margin: 5px 0 0; color: #647276; font-size: 12px; line-height: 1.48; }
 .status-card > div { min-width: 0; }
+.onboarding-card { display: flex; gap: 14px; align-items: center; margin: 16px 0; padding: 13px; color: #cce7e2; background: #173d3c; border: 1px solid #2d746d; border-radius: 12px; }
+.onboarding-card strong { display: block; font-size: 11px; }
+.onboarding-card p { margin: 3px 0 0; color: #a9c9c3; font-size: 9px; line-height: 1.45; }
+.onboarding-card button { flex: none; padding: 7px 9px; color: #e8fffa; background: #245e59; border: 1px solid #4b9a90; border-radius: 7px; font-size: 9px; font-weight: 800; cursor: pointer; }
 
 .source-strip {
   display: flex;
@@ -590,6 +594,10 @@ button { color: inherit; }
 .saved-plan small { display: block; margin-top: 2px; color: #73868a; font-size: 8px; }
 .saved-plan button { padding: 4px 6px; color: #7b8e91; background: transparent; border: 0; border-radius: 5px; font-size: 8px; font-weight: 800; cursor: pointer; }
 .saved-plan button:hover { color: #b64d3c; background: #fff0ed; }
+.pilot-tools .section-title { margin-bottom: 11px; }
+.alert-setting { display: flex; gap: 8px; align-items: center; padding: 7px 0; color: #91a8aa; font-size: 10px; cursor: pointer; }
+.alert-setting input { accent-color: var(--teal); }
+.log-action { margin-top: 10px; cursor: pointer; }
 .record-review-button {
   width: 100%; margin-top: 10px; padding: 9px 12px; color: #718489; background: transparent;
   border: 1px solid var(--line); border-radius: 9px; font-size: 9px; font-weight: 800; cursor: not-allowed;

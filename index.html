@@ -96,6 +96,11 @@
           <button class="more-button" aria-label="More options">•••</button>
         </div>
 
+        <section class="onboarding-card" id="onboardingCard" hidden>
+          <div><strong>Welcome to BandoBrief</strong><p>Use your location for a tailored preflight, then verify FAA TFRs, NOTAMs, weather, local rules, and LAANC before every flight.</p></div>
+          <button id="onboardingDone" type="button">Got it</button>
+        </section>
+
         <section class="status-card caution" id="statusCard">
           <div class="status-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5m0 3v.1"/></svg>
@@ -216,6 +221,29 @@
             </label>
           </form>
           <div class="saved-plan-list" id="savedPlanList" aria-live="polite"></div>
+        </section>
+
+        <section class="section-block pilot-tools">
+          <div class="section-title"><div><h2>Launch spots</h2><span>Private to this device</span></div><button class="text-button" id="saveSpotButton" type="button">Save this spot</button></div>
+          <div class="saved-plan-list" id="savedSpotList"></div>
+        </section>
+
+        <section class="section-block pilot-tools">
+          <div class="section-title"><div><h2>Flight log</h2><span>Capture what actually happened</span></div></div>
+          <form class="flight-plan-form" id="flightLogForm">
+            <label>Duration <span><input id="logDuration" type="number" min="1" max="600" placeholder="24" /> min</span></label>
+            <label>Batteries <input id="logBatteries" type="number" min="0" max="20" placeholder="2" /></label>
+            <label class="plan-notes">Post-flight note <textarea id="logNotes" rows="2" maxlength="280" placeholder="Conditions, shots, or anything to remember"></textarea></label>
+          </form>
+          <button class="record-review-button log-action" id="saveLogButton" type="button">Add flight log</button>
+          <div class="saved-plan-list" id="flightLogList"></div>
+        </section>
+
+        <section class="section-block pilot-tools">
+          <div class="section-title"><div><h2>Flight alerts</h2><span>Reminder preferences on this device</span></div></div>
+          <label class="alert-setting"><input id="alertWeather" type="checkbox" checked /> Weather or NWS alert before a saved plan</label>
+          <label class="alert-setting"><input id="alertAirspace" type="checkbox" checked /> FAA/TFR reminder before a saved plan</label>
+          <p class="saved-plan-empty">BandoBrief will surface these when you open a saved briefing. System notifications can be added after app installation.</p>
         </section>
 
         <section class="section-block checklist-block">
