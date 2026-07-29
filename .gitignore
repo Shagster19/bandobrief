@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.tools/
+.DS_Store
+*.log
+.idea/
+.vscode/
+android/.gradle/
+android/local.properties
+android/app/build/
+ios/App/DerivedData/

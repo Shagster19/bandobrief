@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BandoBrief</string>
+    <string name="title_activity_main">BandoBrief</string>
+    <string name="package_name">com.bandobrief.app</string>
+    <string name="custom_url_scheme">com.bandobrief.app</string>
+</resources>
