@@ -1,4 +1,4 @@
--- Run once to enable privacy-rounded map activity and pilot following.
+-- Run once to enable privacy-rounded persistent pilot map areas and following.
 alter table public.profiles
   add column if not exists activity_lat double precision,
   add column if not exists activity_lng double precision,

@@ -49,7 +49,6 @@ const socialGroup = L.layerGroup().addTo(map);
 let currentPoint = { ...defaultPoint };
 let liveRequestId = 0;
 let inspectedPointRequestId = 0;
-const ACTIVITY_WINDOW_MS = 24 * 60 * 60 * 1000;
 const approximateCoordinate = value => Math.round(Number(value) * 100) / 100;
 
 function socialMarkerIcon(handle) {
@@ -70,19 +69,18 @@ function renderNearbyPilots(pilots, currentUserId = "") {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     const handle = pilot.handle || "pilot";
     L.marker([lat, lng], { icon: socialMarkerIcon(handle) })
-      .bindTooltip(`@${handle} · active nearby`, { direction: "top", offset: [0, -12] })
-      .bindPopup(`<div class="map-point-info"><strong>@${escapeHtml(handle)}</strong><p>Active in this approximate area.</p><small>Locations are rounded for pilot privacy.</small></div>`)
+      .bindTooltip(`@${handle} · shared area`, { direction: "top", offset: [0, -12] })
+      .bindPopup(`<div class="map-point-info"><strong>@${escapeHtml(handle)}</strong><p>Shared approximate area.</p><small>Locations are rounded for pilot privacy.</small></div>`)
       .addTo(socialGroup);
   });
 }
 
 async function loadNearbyPilots() {
   if (!backendReady) return;
-  const since = new Date(Date.now() - ACTIVITY_WINDOW_MS).toISOString();
   const [{ data: pilots, error }, { data: { user } }] = await Promise.all([
     supabase.from("profiles").select("id, handle, activity_lat, activity_lng")
       .eq("show_activity", true).not("activity_lat", "is", null).not("activity_lng", "is", null)
-      .gte("activity_updated_at", since).limit(100),
+      .limit(100),
     supabase.auth.getUser()
   ]);
   if (error) { console.error("Could not load nearby pilot activity", error); return; }
@@ -96,6 +94,23 @@ async function shareApproximateActivity(user, profile) {
     activity_lng: approximateCoordinate(currentPoint.lng),
     activity_updated_at: new Date().toISOString()
   }).eq("id", user.id);
+  if (error) throw error;
+  await loadNearbyPilots();
+}
+
+async function savePersistentPilotArea(userId, home) {
+  if (!backendReady || !userId || !home) return;
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(home)}`, {
+    headers: { Accept: "application/json" }
+  });
+  if (!response.ok) throw new Error("Could not find pilot area");
+  const [result] = await response.json();
+  if (!result) throw new Error("Pilot area not found");
+  const { error } = await supabase.from("profiles").update({
+    activity_lat: approximateCoordinate(result.lat),
+    activity_lng: approximateCoordinate(result.lon),
+    activity_updated_at: new Date().toISOString()
+  }).eq("id", userId);
   if (error) throw error;
   await loadNearbyPilots();
 }
@@ -1309,8 +1324,15 @@ document.querySelector("#profileEditForm").addEventListener("submit", event => {
       first_name: updated.firstName,
       last_name: updated.lastName,
       home: updated.home,
-      drone: updated.drone
-    }).eq("id", updated.id).then(({ error }) => error && console.error("Could not save pilot profile", error));
+      drone: updated.drone,
+      ...(!updated.home ? { activity_lat: null, activity_lng: null, activity_updated_at: null } : {})
+    }).eq("id", updated.id).then(async ({ error }) => {
+      if (error) { console.error("Could not save pilot profile", error); return; }
+      if (!updated.home) { loadNearbyPilots(); return; }
+      if (updated.showActivity === false) return;
+      try { await savePersistentPilotArea(updated.id, updated.home); }
+      catch (areaError) { console.error("Could not save pilot area", areaError); showToast("Profile saved, but the map area could not be found"); }
+    });
   }
   updateAccountButton(updated);
   renderPilotProfile(updated);
