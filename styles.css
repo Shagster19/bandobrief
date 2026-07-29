@@ -1503,6 +1503,13 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
   box-shadow: 0 8px 20px rgba(0, 0, 0, .48), 0 0 0 3px rgba(82, 198, 179, .22);
 }
 .launch-marker::after { border-color: #ffffff; }
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { color: #dce9e8; background: #10242a; }
+.leaflet-popup-content { margin: 12px 14px; font: 600 11px/1.4 "DM Sans", sans-serif; }
+.map-point-info > strong { display: block; color: #76d7c5; font-size: 12px; }
+.map-point-info > span, .map-point-info small { display: block; margin-top: 4px; color: #9db5b7; font-size: 9px; }
+.map-point-info p { margin: 8px 0; }
+.map-point-info button { width: 100%; margin-top: 9px; padding: 7px 9px; color: #e8fffa; background: #245e59; border: 1px solid #3b9d8f; border-radius: 6px; font: 800 9px "DM Sans", sans-serif; cursor: pointer; }
 .social-map-marker {
   color: #ecfffb;
   background: #153f47;

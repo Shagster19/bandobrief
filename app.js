@@ -48,6 +48,7 @@ const airportGroup = L.layerGroup().addTo(overlayGroup);
 const socialGroup = L.layerGroup();
 let currentPoint = { ...defaultPoint };
 let liveRequestId = 0;
+let inspectedPointRequestId = 0;
 
 function makeSocialMarkers(lat, lng) {
   socialGroup.clearLayers();
@@ -155,6 +156,12 @@ function drawFacilityGrid(geojson) {
         `${properties.CEILING ?? "—"} FT FAA CEILING · ${airport}<br>Informational — not authorization`,
         { sticky: true }
       );
+      layer.bindPopup(`
+        <strong>${escapeHtml(airport)}</strong><br>
+        FAA Facility Map ceiling: <strong>${escapeHtml(properties.CEILING ?? "—")} ft</strong><br>
+        ${escapeHtml(properties.AIRSPACE_1 ? `Class ${properties.AIRSPACE_1}` : "Controlled airspace")}<br>
+        <small>Informational only — this is not flight authorization.</small>
+      `);
     }
   }).addTo(facilityGridGroup);
 }
@@ -284,6 +291,11 @@ function renderAirports(airports) {
       `${airport.ICAO_ID || airport.IDENT || "FAA"} · ${airport.NAME}<br>${titleCase(airport.TYPE_CODE)} · ${airport.distance.toFixed(1)} mi`,
       { sticky: true }
     );
+    marker.bindPopup(`
+      <strong>${escapeHtml(airport.ICAO_ID || airport.IDENT || "FAA")} · ${escapeHtml(airport.NAME)}</strong><br>
+      ${escapeHtml(titleCase(airport.TYPE_CODE))} · ${airport.distance.toFixed(1)} mi from your proposed launch point<br>
+      <small>${escapeHtml(airport.OPERSTATUS || "FAA record")} — proximity alone is not a regulatory boundary.</small>
+    `);
     marker.addTo(airportGroup);
   });
 }
@@ -545,8 +557,44 @@ function updateBriefing(lat, lng, name, moveMap = true) {
   refreshRealData();
 }
 
-map.on("click", event => {
-  updateBriefing(event.latlng.lat, event.latlng.lng, "Dropped pin", false);
+function pointInfoContent(lat, lng, facility) {
+  const airport = facility?.APT1_NAME || facility?.APT1_FAAID || "No FAA Facility Map cell";
+  const ceiling = facility ? `${facility.CEILING ?? "—"} ft` : "No published cell";
+  const airspace = facility?.AIRSPACE_1 ? `Class ${facility.AIRSPACE_1}` : "Additional checks required";
+  return `
+    <div class="map-point-info">
+      <strong>Selected map point</strong>
+      <span>${friendlyCoords(lat, lng)}</span>
+      <p><b>${escapeHtml(airport)}</b><br>${escapeHtml(airspace)} · FAA ceiling: ${escapeHtml(ceiling)}</p>
+      <small>Viewing this point does not move your proposed launch marker.</small>
+      <button type="button" data-use-inspected-point data-lat="${lat}" data-lng="${lng}">Use as proposed launch point</button>
+    </div>`;
+}
+
+async function openPointInfo(lat, lng) {
+  const requestId = ++inspectedPointRequestId;
+  const popup = L.popup({ maxWidth: 275 })
+    .setLatLng([lat, lng])
+    .setContent("<div class=\"map-point-info\"><strong>Selected map point</strong><p>Loading FAA point information…</p><small>Your proposed launch marker has not moved.</small></div>")
+    .openOn(map);
+  try {
+    const { facility } = await loadFacilityData(lat, lng);
+    if (requestId === inspectedPointRequestId) popup.setContent(pointInfoContent(lat, lng, facility));
+  } catch {
+    if (requestId === inspectedPointRequestId) {
+      popup.setContent(`<div class="map-point-info"><strong>Selected map point</strong><span>${friendlyCoords(lat, lng)}</span><p>FAA point information is unavailable right now.</p><small>Your proposed launch marker has not moved.</small><button type="button" data-use-inspected-point data-lat="${lat}" data-lng="${lng}">Use as proposed launch point</button></div>`);
+    }
+  }
+}
+
+map.on("click", event => openPointInfo(event.latlng.lat, event.latlng.lng));
+
+document.querySelector("#map").addEventListener("click", event => {
+  const button = event.target.closest("[data-use-inspected-point]");
+  if (!button) return;
+  updateBriefing(Number(button.dataset.lat), Number(button.dataset.lng), "Dropped pin", false);
+  map.closePopup();
+  showToast("Proposed launch point updated");
 });
 
 launchMarker.on("dragend", event => {
