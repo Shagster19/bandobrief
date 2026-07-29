@@ -674,7 +674,7 @@ document.querySelector("#searchForm").addEventListener("submit", async event => 
   }
 });
 
-document.querySelector("#locateButton").addEventListener("click", async () => {
+async function useCurrentLocation() {
   showToast("Finding your location…");
 
   if (window.Capacitor?.isNativePlatform?.()) {
@@ -708,6 +708,10 @@ document.querySelector("#locateButton").addEventListener("click", async () => {
     () => showToast("Location access was unavailable"),
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
   );
+}
+
+document.querySelector("#locateButton").addEventListener("click", () => {
+  void useCurrentLocation();
 });
 
 let overlaysVisible = true;
@@ -1858,6 +1862,7 @@ const initialPoint = hasSharedPoint
   : defaultPoint;
 
 updateBriefing(initialPoint.lat, initialPoint.lng, initialPoint.name, hasSharedPoint);
+if (!hasSharedPoint) void useCurrentLocation();
 
 const initialSession = readPrototypeSession();
 updateAccountButton(initialSession);
