@@ -1407,12 +1407,12 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
 
 @media (max-width: 740px) {
   .app-shell { display: block; }
-  .topbar { position: sticky; top: 0; height: 64px; padding: 0 15px; }
+  .topbar { position: sticky; top: 0; height: 58px; padding: 0 14px; }
   .brand-mark { width: 35px; height: 35px; }
   .prototype-chip { display: none; }
   .workspace { display: block; }
-  .map-stage { position: relative; top: 0; height: 54vh; min-height: 410px; }
-  .briefing-panel { padding: 24px 18px 30px; border: 0; }
+  .map-stage { position: relative; top: 0; height: 42svh; min-height: 300px; max-height: 390px; }
+  .briefing-panel { padding: 18px 16px 24px; border: 0; }
   .search-card { top: 14px; width: calc(100% - 28px); height: 52px; padding-left: 14px; }
   .search-card button { padding-inline: 12px; }
   .map-legend { left: 14px; bottom: 14px; max-width: calc(100% - 28px); overflow-x: auto; }
@@ -1421,11 +1421,11 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
   .map-tools { left: 14px; }
   .community-view { max-width: 540px; margin: 0 auto; }
   .topbar {
-    min-height: calc(64px + env(safe-area-inset-top));
-    height: calc(64px + env(safe-area-inset-top));
+    min-height: calc(58px + env(safe-area-inset-top));
+    height: calc(58px + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);
   }
-  .briefing-panel { padding-bottom: calc(30px + env(safe-area-inset-bottom)); }
+  .briefing-panel { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   .map-legend { bottom: calc(14px + env(safe-area-inset-bottom)); }
   .auth-screen { padding: 0; }
   .auth-card { width: 100%; min-height: 100%; grid-template-columns: 1fr; border: 0; border-radius: 0; }
@@ -1443,6 +1443,15 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
   .profile-screen { align-items: end; padding: 0; }
   .profile-card { width: 100%; max-height: calc(100vh - env(safe-area-inset-top)); border-radius: 22px 22px 0 0; }
   .profile-content { padding-bottom: calc(27px + env(safe-area-inset-bottom)); }
+  .briefing-heading h1 { font-size: 22px; }
+  .briefing-heading p:last-child { font-size: 11px; }
+  .status-card { padding: 13px; }
+  .status-card p { font-size: 11px; }
+  .section-block { margin-top: 18px; padding-top: 18px; }
+  .metrics-grid { gap: 8px; }
+  .metric { min-height: 76px; padding: 10px; }
+  .metric strong { font-size: 15px; }
+  .legal-note { margin-top: 18px; padding-bottom: env(safe-area-inset-bottom); }
 }
 
 @media (max-width: 520px) {
@@ -1457,13 +1466,18 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
 
 @media (max-width: 440px) {
   .brand small { display: none; }
-  .metrics-grid { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
   .map-legend span:nth-child(2) { display: none; }
   .meetup-card { grid-template-columns: 42px 1fr; }
   .interested-button { grid-column: 1 / -1; }
   .profile-details, .profile-edit-form { grid-template-columns: 1fr; }
   .profile-edit-form label:first-child, .profile-edit-form > div { grid-column: 1; }
   .profile-actions { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 350px) {
+  .metrics-grid { grid-template-columns: 1fr; }
+  .map-stage { min-height: 280px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1613,6 +1627,6 @@ body.community-active .briefing-panel {
 body.community-active .community-view { width: min(100%, 920px); margin: 0 auto; }
 
 @media (max-width: 740px) {
-  body.community-active .briefing-panel { min-height: calc(100vh - 64px); padding: 24px 18px 30px; }
+  body.community-active .briefing-panel { min-height: calc(100vh - 58px); padding: 18px 16px 24px; }
   body.community-active .community-view { max-width: 540px; }
 }
