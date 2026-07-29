@@ -1278,8 +1278,8 @@ function renderMediaPreview() {
 document.querySelector("#attachMediaButton").addEventListener("click", () => mediaInput.click());
 mediaInput.addEventListener("change", () => {
   const incoming = [...mediaInput.files];
-  const invalid = incoming.find(file => !/^(image\/(jpeg|png|webp)|video\/(mp4|quicktime))$/.test(file.type) || file.size > 50 * 1024 * 1024);
-  if (invalid) { showToast("Use JPG, PNG, WebP, MP4, or MOV files up to 50 MB"); mediaInput.value = ""; return; }
+  const invalid = incoming.find(file => !/^(image\/(jpeg|png|webp)|video\/(mp4|quicktime))$/.test(file.type) || file.size > 250 * 1024 * 1024);
+  if (invalid) { showToast("Use JPG, PNG, WebP, MP4, or MOV files up to 250 MB"); mediaInput.value = ""; return; }
   selectedMedia = [...selectedMedia, ...incoming].slice(0, 5);
   mediaInput.value = "";
   renderMediaPreview();

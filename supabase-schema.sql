@@ -49,7 +49,7 @@ $$;
 create trigger create_profile_after_signup after insert on auth.users for each row execute procedure public.create_profile_for_user();
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('post-media', 'post-media', true, 52428800, array['image/jpeg','image/png','image/webp','video/mp4','video/quicktime'])
+values ('post-media', 'post-media', true, 262144000, array['image/jpeg','image/png','image/webp','video/mp4','video/quicktime'])
 on conflict (id) do nothing;
 create policy "beta users upload their media" on storage.objects for insert to authenticated
   with check (bucket_id = 'post-media' and (storage.foldername(name))[1] = auth.uid()::text);
