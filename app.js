@@ -1047,27 +1047,40 @@ document.querySelector("#loginForm").addEventListener("submit", async event => {
   const formData = new FormData(event.currentTarget);
   const email = String(formData.get("email")).trim();
   const password = String(formData.get("password"));
+  if (!email || !password) { showToast("Enter your email and password to log in"); return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)) { showToast("Enter a valid email address"); return; }
+  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+  const originalText = submitButton.textContent;
+  submitButton.disabled = true;
+  submitButton.textContent = "Signing in…";
   if (backendReady) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      if (/email not confirmed/i.test(error.message)) {
-        const { error: resendError } = await supabase.auth.resend({
-          type: "signup",
-          email,
-          options: { emailRedirectTo: authRedirectUrl() }
-        });
-        showToast(resendError ? error.message : "Confirm your email first — a new link was sent");
-      } else {
-        showToast(error.message);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (/email not confirmed/i.test(error.message)) {
+          const { error: resendError } = await supabase.auth.resend({
+            type: "signup",
+            email,
+            options: { emailRedirectTo: authRedirectUrl() }
+          });
+          showToast(resendError ? error.message : "Confirm your email first — a new link was sent");
+        } else {
+          showToast(error.message);
+        }
+        return;
       }
-      return;
+      const profile = await remoteProfileForUser(data.user);
+      savePrototypeSession(profile);
+      updateAccountButton(profile);
+      event.currentTarget.querySelector('input[name="password"]').value = "";
+      closeAuth();
+      showToast(`Welcome back, ${profile.name}`);
+    } catch {
+      showToast("Could not reach secure sign-in. Check your connection and try again.");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
     }
-    const profile = await remoteProfileForUser(data.user);
-    savePrototypeSession(profile);
-    updateAccountButton(profile);
-    event.currentTarget.querySelector('input[name="password"]').value = "";
-    closeAuth();
-    showToast(`Welcome back, ${profile.name}`);
     return;
   }
   const priorProfile = readPrototypeSession();
@@ -1086,6 +1099,8 @@ document.querySelector("#loginForm").addEventListener("submit", async event => {
   event.currentTarget.querySelector('input[name="password"]').value = "";
   closeAuth();
   showToast(`Welcome back, ${profile.name}`);
+  submitButton.disabled = false;
+  submitButton.textContent = originalText;
 });
 
 document.querySelector("#signupForm").addEventListener("submit", async event => {
