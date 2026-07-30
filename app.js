@@ -941,7 +941,9 @@ const AUTH_SESSION_KEY = "bandobrief.prototype.session";
 const PENDING_SIGNUP_KEY = "bandobrief.pending-signup";
 const authScreen = document.querySelector("#authScreen");
 const profileScreen = document.querySelector("#profileScreen");
+const notificationScreen = document.querySelector("#notificationScreen");
 const accountButton = document.querySelector("#accountButton");
+const notificationsButton = document.querySelector("#notificationsButton");
 const authTabs = [...document.querySelectorAll("[data-auth-view]")];
 const authForms = [...document.querySelectorAll("[data-auth-form]")];
 
@@ -1037,6 +1039,9 @@ function updateAccountButton(profile) {
   const composerAvatar = document.querySelector(".composer-main .pilot-avatar.self");
   if (composerAvatar) applyPilotImage(composerAvatar, profile?.avatar, isPilot ? name.trim().charAt(0).toUpperCase() : "P");
   accountButton.setAttribute("aria-label", isPilot ? `Account for ${name}` : "Create an account or log in");
+  notificationsButton.hidden = !isPilot;
+  if (isPilot && profile.id) void loadNotifications(profile.id);
+  else updateNotificationBadge([]);
 }
 
 async function remoteProfileForUser(user) {
@@ -1169,19 +1174,96 @@ function renderFollowers(follows = []) {
     const handleElement = document.createElement("small");
     handleElement.textContent = `@${handle}`;
     details.append(nameElement, handleElement);
-    row.append(avatar, details);
+    const followBack = document.createElement("button");
+    followBack.type = "button";
+    followBack.className = "follow-back";
+    followBack.dataset.followingId = follow.follower_id;
+    followBack.classList.toggle("active", Boolean(follow.isFollowingBack));
+    followBack.setAttribute("aria-pressed", String(Boolean(follow.isFollowingBack)));
+    followBack.textContent = follow.isFollowingBack ? "Following" : "Follow back";
+    row.append(avatar, details, followBack);
     list.append(row);
   });
 }
 
 async function loadFollowers(userId) {
   if (!backendReady || !userId) return;
-  const { data, error } = await supabase.from("follows")
-    .select("follower_id, created_at, profiles!follows_follower_id_fkey(handle, first_name, last_name, avatar_url)")
-    .eq("following_id", userId)
-    .order("created_at", { ascending: false });
+  const [{ data, error }, { data: outgoing }] = await Promise.all([
+    supabase.from("follows")
+      .select("follower_id, created_at, profiles!follows_follower_id_fkey(handle, first_name, last_name, avatar_url)")
+      .eq("following_id", userId)
+      .order("created_at", { ascending: false }),
+    supabase.from("follows").select("following_id").eq("follower_id", userId)
+  ]);
   if (error) { console.error("Could not load followers", error); return; }
-  renderFollowers(data || []);
+  const followingIds = new Set((outgoing || []).map(follow => follow.following_id));
+  renderFollowers((data || []).map(follow => ({ ...follow, isFollowingBack: followingIds.has(follow.follower_id) })));
+}
+
+function renderNotifications(notifications = []) {
+  const list = document.querySelector("#notificationList");
+  list.replaceChildren();
+  if (!notifications.length) {
+    const empty = document.createElement("p");
+    empty.className = "notification-empty";
+    empty.textContent = "You’re all caught up. New pilot follows will appear here.";
+    list.append(empty);
+    return;
+  }
+  notifications.forEach(notification => {
+    const pilot = notification.profiles || {};
+    const handle = pilot.handle || "A pilot";
+    const row = document.createElement("div");
+    row.className = `notification-row${notification.read_at ? "" : " unread"}`;
+    const avatar = document.createElement("span");
+    avatar.className = "follower-avatar";
+    applyPilotImage(avatar, pilot.avatar_url || "", handle.charAt(0).toUpperCase());
+    const text = document.createElement("div");
+    const message = document.createElement("p");
+    message.textContent = notification.type === "follow" ? `@${handle} started following you.` : "You have a new notification.";
+    const time = document.createElement("small");
+    time.textContent = new Date(notification.created_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    text.append(message, time);
+    row.append(avatar, text);
+    list.append(row);
+  });
+}
+
+function updateNotificationBadge(notifications = []) {
+  const unread = notifications.filter(notification => !notification.read_at).length;
+  notificationsButton.hidden = !readPrototypeSession() || readPrototypeSession()?.guest;
+  document.querySelector("#notificationBadge").hidden = !unread;
+  document.querySelector("#notificationBadge").textContent = unread > 99 ? "99+" : String(unread);
+}
+
+async function loadNotifications(userId, { markRead = false } = {}) {
+  if (!backendReady || !userId) return [];
+  const { data, error } = await supabase.from("notifications")
+    .select("id, type, created_at, read_at, profiles!notifications_actor_id_fkey(handle, avatar_url)")
+    .eq("recipient_id", userId).order("created_at", { ascending: false }).limit(50);
+  if (error) { console.error("Could not load notifications", error); return []; }
+  renderNotifications(data || []);
+  updateNotificationBadge(data || []);
+  if (markRead && data?.some(notification => !notification.read_at)) {
+    const unreadIds = data.filter(notification => !notification.read_at).map(notification => notification.id);
+    const { error: updateError } = await supabase.from("notifications").update({ read_at: new Date().toISOString() }).in("id", unreadIds);
+    if (!updateError) updateNotificationBadge([]);
+  }
+  return data || [];
+}
+
+async function notifyOfFollow(actorId, recipientId) {
+  if (!backendReady || actorId === recipientId) return;
+  const { error } = await supabase.from("notifications").insert({ actor_id: actorId, recipient_id: recipientId, type: "follow" });
+  if (error) console.error("Could not create follow notification", error);
+}
+
+async function setFollowing(userId, followingId, currentlyFollowing) {
+  const { error } = currentlyFollowing
+    ? await supabase.from("follows").delete().eq("follower_id", userId).eq("following_id", followingId)
+    : await supabase.from("follows").insert({ follower_id: userId, following_id: followingId });
+  if (error) throw error;
+  if (!currentlyFollowing) void notifyOfFollow(userId, followingId);
 }
 
 function openPilotProfile() {
@@ -1196,6 +1278,34 @@ function openPilotProfile() {
   profileScreen.hidden = false;
   document.body.classList.add("auth-open");
 }
+
+notificationsButton.addEventListener("click", async () => {
+  const profile = readPrototypeSession();
+  if (!profile || profile.guest) { openAuth("login"); return; }
+  notificationScreen.hidden = false;
+  document.body.classList.add("auth-open");
+  await loadNotifications(profile.id, { markRead: true });
+});
+document.querySelectorAll("[data-notification-close]").forEach(button => button.addEventListener("click", () => {
+  notificationScreen.hidden = true;
+  if (profileScreen.hidden) document.body.classList.remove("auth-open");
+}));
+document.querySelector("#profileFollowerList").addEventListener("click", event => {
+  const button = event.target.closest(".follow-back");
+  if (!button || !backendReady) return;
+  void (async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const followingId = button.dataset.followingId;
+    if (!user || !followingId) return;
+    const currentlyFollowing = button.getAttribute("aria-pressed") === "true";
+    try { await setFollowing(user.id, followingId, currentlyFollowing); }
+    catch { showToast("Could not update that follow"); return; }
+    button.classList.toggle("active", !currentlyFollowing);
+    button.setAttribute("aria-pressed", String(!currentlyFollowing));
+    button.textContent = currentlyFollowing ? "Follow back" : "Following";
+    showToast(currentlyFollowing ? "Unfollowed pilot" : "Following pilot");
+  })();
+});
 
 function closePilotProfile() {
   profileScreen.hidden = true;
@@ -1882,10 +1992,8 @@ document.querySelector("#communityFeed").addEventListener("click", event => {
       const followingId = followButton.dataset.followingId;
       if (!followingId || followingId === user.id) return;
       const following = followButton.getAttribute("aria-pressed") === "true";
-      const { error } = following
-        ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", followingId)
-        : await supabase.from("follows").insert({ follower_id: user.id, following_id: followingId });
-      if (error) { showToast("Could not update that follow"); return; }
+      try { await setFollowing(user.id, followingId, following); }
+      catch { showToast("Could not update that follow"); return; }
       followButton.textContent = following ? "Follow" : "Following";
       followButton.classList.toggle("active", !following);
       followButton.setAttribute("aria-pressed", String(!following));

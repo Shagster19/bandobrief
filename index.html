@@ -47,6 +47,10 @@
           </button>
         </nav>
         <span class="prototype-chip live"><i></i> Live data beta</span>
+        <button class="icon-button notification-button" id="notificationsButton" type="button" aria-label="Open notifications" title="Notifications" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 10a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+          <span id="notificationBadge" hidden>0</span>
+        </button>
         <button class="account-button" id="accountButton" type="button" aria-label="Open account">
           <span class="account-avatar" id="accountAvatar">P</span>
           <span id="accountLabel">Create account</span>
@@ -633,6 +637,14 @@
           <p>Account data is local to this browser session.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="profile-screen notification-screen" id="notificationScreen" hidden aria-label="Notifications">
+    <div class="profile-backdrop" data-notification-close></div>
+    <div class="notification-card" role="dialog" aria-modal="true" aria-labelledby="notificationsTitle">
+      <header><div><p>Pilot network</p><h2 id="notificationsTitle">Notifications</h2></div><button class="profile-close" type="button" data-notification-close aria-label="Close notifications">×</button></header>
+      <div class="notification-list" id="notificationList" aria-live="polite"></div>
     </div>
   </section>
 

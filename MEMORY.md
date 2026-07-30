@@ -31,6 +31,8 @@ The local reference SQL files are:
 - `supabase-profile-migration.sql`
 - `supabase-pilot-network-migration.sql`
 - `supabase-followers-read-migration.sql`
+- `supabase-notifications-migration.sql`
+- `supabase-notifications-follow-integrity-migration.sql`
 
 ## Current features
 
@@ -43,6 +45,7 @@ The local reference SQL files are:
 - The brief requests a current location when the page opens or resumes, keeps the Locate button as a manual refresh, draws an accuracy circle, and redraws map tiles after restore.
 - Pilot identity is persisted locally between browser visits; the login screen no longer opens automatically. Signing out clears the saved local profile.
 - The pilot account shows a follower count and the profiles of pilots who follow that account. This needs the follower-read SQL migration applied in Supabase.
+- Pilots can follow back directly from their follower list. New follows create private in-app notifications, enforced against a real follow relationship by the notifications migrations.
 - The preflight checklist uses in-layout toggle controls to avoid browser scroll jumps.
 - The briefing now includes device-local saved launch spots, flight logs (duration, batteries, notes), flight-alert preferences, and first-visit safety onboarding.
 

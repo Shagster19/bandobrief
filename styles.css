@@ -83,6 +83,9 @@ button { color: inherit; }
 }
 
 .topbar-actions { display: flex; align-items: center; gap: 12px; -webkit-app-region: no-drag; }
+.notification-button { position: relative; }
+.notification-button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.notification-button span { position: absolute; top: -5px; right: -5px; min-width: 15px; height: 15px; display: grid; place-items: center; padding: 0 3px; color: #fff; background: #c85140; border-radius: 99px; font-size: 7px; font-weight: 800; }
 .view-switch {
   display: flex;
   gap: 3px;
@@ -1292,6 +1295,17 @@ button { color: inherit; }
   box-shadow: 0 28px 90px rgba(12,32,38,.34);
   animation: auth-enter .28s ease-out;
 }
+.notification-card { position: relative; width: min(390px, 100%); max-height: min(620px, calc(100vh - 48px)); overflow: auto; background: #fff; border: 1px solid rgba(255,255,255,.8); border-radius: 20px; box-shadow: 0 24px 72px rgba(12,32,38,.28); }
+.notification-card > header { display: flex; align-items: flex-start; justify-content: space-between; padding: 22px 22px 16px; border-bottom: 1px solid var(--line); }
+.notification-card header p { margin: 0 0 3px; color: var(--teal); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.notification-card header h2 { margin: 0; font: 800 20px "Manrope", sans-serif; }
+.notification-card .profile-close { position: static; color: #6f8185; background: #edf3f1; }
+.notification-list { display: grid; gap: 8px; padding: 14px 18px 18px; }
+.notification-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: #f5f8f6; border: 1px solid #e3ebe8; border-radius: 11px; }
+.notification-row.unread { background: #eaf6f2; border-color: #cde7df; }
+.notification-row p { margin: 0; font-size: 9px; line-height: 1.4; }
+.notification-row small, .notification-empty { display: block; margin-top: 3px; color: #829095; font-size: 8px; }
+.notification-empty { margin: 8px 2px; }
 .profile-cover {
   position: relative;
   min-height: 190px;
@@ -1366,6 +1380,8 @@ button { color: inherit; }
 .follower-row strong { font-size: 9px; }
 .follower-row small, .follower-empty { margin-top: 2px; color: #829095; font-size: 8px; }
 .follower-empty { margin: 0; padding: 4px 0; }
+.follow-back { margin-left: auto; padding: 6px 8px; color: var(--teal); background: var(--teal-soft); border: 1px solid transparent; border-radius: 7px; font-size: 8px; font-weight: 800; cursor: pointer; }
+.follow-back.active { color: #fff; background: var(--teal); }
 .profile-section { margin-top: 14px; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 15px; }
 .profile-section-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
 .profile-section-title span { font-size: 11px; font-weight: 800; }
@@ -1658,6 +1674,13 @@ dialog p, .status-card p, .notice p, .metric p, .metric small, .metric strong em
 .profile-details > div { background: #172a30; border-color: #2d474d; }
 .follower-row { background: #172a30; border-color: #2d474d; }
 .follower-row small, .follower-empty { color: #9db3b5; }
+.follow-back { color: #aee1d3; background: #24524d; }
+.notification-card { background: #0f1d22; border-color: #294149; }
+.notification-card > header { border-color: #294149; }
+.notification-card .profile-close { color: #b5c8c8; background: #263a40; }
+.notification-row { background: #172a30; border-color: #2d474d; }
+.notification-row.unread { background: #18352f; border-color: #2b6258; }
+.notification-row small, .notification-empty { color: #9db3b5; }
 .profile-edit-form input { color: var(--ink); background: #172a30; border-color: #355158; }
 .profile-edit-form button:first-child { color: #b5c8c8; background: #263a40; }
 .profile-signout { background: #3a2423; border-color: #70413c; }
