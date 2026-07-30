@@ -1359,6 +1359,13 @@ button { color: inherit; }
 .profile-stats div:last-child { border-right: 0; }
 .profile-stats strong { display: block; font: 800 16px "Manrope", sans-serif; }
 .profile-stats span { display: block; margin-top: 2px; color: #7b8b90; font-size: 8px; font-weight: 700; }
+.follower-list { display: grid; gap: 8px; margin-top: 14px; }
+.follower-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; background: #f5f8f6; border: 1px solid #e3ebe8; border-radius: 10px; }
+.follower-avatar { width: 30px; height: 30px; flex: none; display: grid; place-items: center; overflow: hidden; color: #fff; background: var(--teal); border-radius: 50%; font-size: 10px; font-weight: 800; }
+.follower-row strong, .follower-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.follower-row strong { font-size: 9px; }
+.follower-row small, .follower-empty { margin-top: 2px; color: #829095; font-size: 8px; }
+.follower-empty { margin: 0; padding: 4px 0; }
 .profile-section { margin-top: 14px; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 15px; }
 .profile-section-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
 .profile-section-title span { font-size: 11px; font-weight: 800; }
@@ -1649,6 +1656,8 @@ dialog p, .status-card p, .notice p, .metric p, .metric small, .metric strong em
 .section-title > span, .legal-note { color: #9db5b7; }
 .profile-card { background: #0f1d22; }
 .profile-details > div { background: #172a30; border-color: #2d474d; }
+.follower-row { background: #172a30; border-color: #2d474d; }
+.follower-row small, .follower-empty { color: #9db3b5; }
 .profile-edit-form input { color: var(--ink); background: #172a30; border-color: #355158; }
 .profile-edit-form button:first-child { color: #b5c8c8; background: #263a40; }
 .profile-signout { background: #3a2423; border-color: #70413c; }

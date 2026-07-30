@@ -572,10 +572,17 @@
 
       <div class="profile-content">
         <div class="profile-stats" aria-label="Account activity">
-          <div><strong>0</strong><span>Saved briefs</span></div>
+          <div><strong id="profileFollowerCount">0</strong><span>Followers</span></div>
           <div><strong>0</strong><span>Trusted spots</span></div>
           <div><strong id="profilePostCount">0</strong><span>Posts</span></div>
         </div>
+
+        <section class="profile-section" aria-labelledby="followersTitle">
+          <div class="profile-section-title">
+            <div><span id="followersTitle">Your followers</span><p id="profileFollowerSummary">Pilots who follow your updates.</p></div>
+          </div>
+          <div class="follower-list" id="profileFollowerList" aria-live="polite"></div>
+        </section>
 
         <section class="profile-section">
           <div class="profile-section-title">

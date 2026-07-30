@@ -1139,6 +1139,51 @@ function renderPilotProfile(profile) {
     String(document.querySelectorAll("#communityFeed .pilot-avatar.self").length);
 }
 
+function renderFollowers(follows = []) {
+  const count = follows.length;
+  const list = document.querySelector("#profileFollowerList");
+  document.querySelector("#profileFollowerCount").textContent = String(count);
+  document.querySelector("#profileFollowerSummary").textContent = count
+    ? `${count} pilot${count === 1 ? "" : "s"} follow${count === 1 ? "s" : ""} your updates.`
+    : "No pilots follow you yet.";
+  list.replaceChildren();
+  if (!count) {
+    const empty = document.createElement("p");
+    empty.className = "follower-empty";
+    empty.textContent = "Share a community post to help other pilots find you.";
+    list.append(empty);
+    return;
+  }
+  follows.forEach(follow => {
+    const pilot = follow.profiles || {};
+    const handle = pilot.handle || "pilot";
+    const name = [pilot.first_name, pilot.last_name].filter(Boolean).join(" ").trim() || `@${handle}`;
+    const row = document.createElement("div");
+    row.className = "follower-row";
+    const avatar = document.createElement("span");
+    avatar.className = "follower-avatar";
+    applyPilotImage(avatar, pilot.avatar_url || "", handle.charAt(0).toUpperCase());
+    const details = document.createElement("div");
+    const nameElement = document.createElement("strong");
+    nameElement.textContent = name;
+    const handleElement = document.createElement("small");
+    handleElement.textContent = `@${handle}`;
+    details.append(nameElement, handleElement);
+    row.append(avatar, details);
+    list.append(row);
+  });
+}
+
+async function loadFollowers(userId) {
+  if (!backendReady || !userId) return;
+  const { data, error } = await supabase.from("follows")
+    .select("follower_id, created_at, profiles!follows_follower_id_fkey(handle, first_name, last_name, avatar_url)")
+    .eq("following_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) { console.error("Could not load followers", error); return; }
+  renderFollowers(data || []);
+}
+
 function openPilotProfile() {
   const profile = readPrototypeSession();
   if (!profile || profile.guest) {
@@ -1146,6 +1191,8 @@ function openPilotProfile() {
     return;
   }
   renderPilotProfile(profile);
+  renderFollowers([]);
+  void loadFollowers(profile.id);
   profileScreen.hidden = false;
   document.body.classList.add("auth-open");
 }
