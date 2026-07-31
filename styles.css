@@ -905,6 +905,21 @@ button { color: inherit; }
 }
 .interested-button.active { color: #fff; background: var(--teal); border-color: var(--teal); }
 .community-note { margin-top: 15px; }
+.pilot-start-card { position: relative; margin: 0 0 14px; padding: 18px; color: #dcf4ee; background: linear-gradient(135deg, #153d3d, #1b5550); border: 1px solid #367a70; border-radius: 15px; box-shadow: 0 10px 28px rgba(23,74,69,.18); }
+.pilot-start-card .eyebrow { margin: 0 0 5px; color: #8ddbc9; }
+.pilot-start-card h2 { max-width: 340px; margin: 0; font: 800 17px/1.15 "Manrope", sans-serif; letter-spacing: -.3px; }
+.pilot-start-card > p:not(.eyebrow) { max-width: 480px; margin: 7px 0 0; color: #b7ddd5; font-size: 9px; line-height: 1.5; }
+.pilot-start-dismiss { position: absolute; top: 10px; right: 11px; width: 24px; height: 24px; color: #bce2d9; background: transparent; border: 0; border-radius: 6px; font-size: 17px; cursor: pointer; }
+.pilot-start-dismiss:hover { color: #fff; background: rgba(255,255,255,.12); }
+.pilot-start-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 14px; }
+.pilot-start-step { display: flex; gap: 7px; align-items: center; min-width: 0; padding: 8px; color: #c4e5de; background: rgba(3,22,22,.18); border: 1px solid rgba(164,224,209,.16); border-radius: 8px; font-size: 8px; font-weight: 700; }
+.pilot-start-step i { width: 15px; height: 15px; flex: none; display: grid; place-items: center; color: #79cdbb; background: rgba(121,205,187,.12); border: 1px solid rgba(121,205,187,.42); border-radius: 50%; font-size: 9px; font-style: normal; }
+.pilot-start-step.done { color: #e6faf5; }
+.pilot-start-step.done i { color: #113c37; background: #88d8c5; border-color: #88d8c5; }
+.pilot-start-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.pilot-start-actions button { padding: 7px 9px; color: #e9fffa; background: #246962; border: 1px solid #58aa9b; border-radius: 8px; font: 800 8px "DM Sans", sans-serif; cursor: pointer; }
+.pilot-start-actions button:hover { background: #2f8077; }
+.pilot-start-actions button[data-pilot-start-action="explore"] { color: #164a44; background: #c2eee3; border-color: #c2eee3; }
 
 .social-map-marker {
   width: 29px;
@@ -1533,6 +1548,7 @@ dialog p { margin: 0 0 20px; color: #64777c; font-size: 12px; line-height: 1.6; 
   .profile-details, .profile-edit-form { grid-template-columns: 1fr; }
   .profile-edit-form label:first-child, .profile-edit-form > div { grid-column: 1; }
   .profile-actions { align-items: flex-start; flex-direction: column; }
+  .pilot-start-steps { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 350px) {

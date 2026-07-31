@@ -48,6 +48,7 @@ The local reference SQL files are:
 - Pilots can follow back directly from their follower list. New follows create private in-app notifications, enforced against a real follow relationship by the notifications migrations.
 - The preflight checklist uses in-layout toggle controls to avoid browser scroll jumps.
 - The briefing now includes device-local saved launch spots, flight logs (duration, batteries, notes), flight-alert preferences, and first-visit safety onboarding.
+- First-time authenticated pilots are directed to Community for a lightweight getting-started card: add a home area, select an aircraft, post an update, explore nearby pilots, or save the current spot. Card progress is device-local and can be dismissed.
 
 ## Recent commits
 

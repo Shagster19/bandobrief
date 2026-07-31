@@ -939,6 +939,7 @@ document.querySelector("#dialogGotIt").addEventListener("click", () => dialog.cl
 
 const AUTH_SESSION_KEY = "bandobrief.prototype.session";
 const PENDING_SIGNUP_KEY = "bandobrief.pending-signup";
+const PILOT_START_KEY_PREFIX = "bandobrief.pilot-start.";
 const authScreen = document.querySelector("#authScreen");
 const profileScreen = document.querySelector("#profileScreen");
 const notificationScreen = document.querySelector("#notificationScreen");
@@ -979,6 +980,18 @@ function savePrototypeSession(profile) {
   } catch {
     // Account preview still works for this page if storage is unavailable.
   }
+}
+
+function pilotStartKey(profile) {
+  return `${PILOT_START_KEY_PREFIX}${profile?.id || profile?.email || "local"}`;
+}
+
+function readPilotStart(profile) {
+  try { return JSON.parse(localStorage.getItem(pilotStartKey(profile)) || "{}"); } catch { return {}; }
+}
+
+function savePilotStart(profile, update) {
+  try { localStorage.setItem(pilotStartKey(profile), JSON.stringify({ ...readPilotStart(profile), ...update })); } catch { /* Getting started is optional. */ }
 }
 
 function savePendingSignup(profile) {
@@ -1042,6 +1055,7 @@ function updateAccountButton(profile) {
   notificationsButton.hidden = !isPilot;
   if (isPilot && profile.id) void loadNotifications(profile.id);
   else updateNotificationBadge([]);
+  renderPilotStart(profile);
 }
 
 async function remoteProfileForUser(user) {
@@ -1077,6 +1091,10 @@ async function hydrateRemoteSession() {
   updateAccountButton(profile);
   closeAuth();
   loadNearbyPilots();
+  const start = readPilotStart(profile);
+  if (!start.autoShown && !start.dismissed) {
+    openPilotStart(profile);
+  }
 }
 
 if (backendReady) {
@@ -1143,6 +1161,71 @@ function renderPilotProfile(profile) {
   document.querySelector("#profilePostCount").textContent =
     String(document.querySelectorAll("#communityFeed .pilot-avatar.self").length);
 }
+
+function renderPilotStart(profile = readPrototypeSession()) {
+  const card = document.querySelector("#pilotStartCard");
+  if (!card) return;
+  const isPilot = profile && !profile.guest;
+  const start = isPilot ? readPilotStart(profile) : {};
+  card.hidden = !isPilot || Boolean(start.dismissed);
+  if (card.hidden) return;
+
+  const handle = pilotHandleLabel(profile);
+  document.querySelector("#pilotStartCopy").textContent = `${handle}, a couple quick steps make it easier for nearby pilots to find and connect with you.`;
+  const steps = [
+    { label: "Add your home area", done: Boolean(profile.home) },
+    { label: "Choose your aircraft", done: Boolean(profile.drone) },
+    { label: "Share a first update", done: Boolean(start.posted) }
+  ];
+  const list = document.querySelector("#pilotStartSteps");
+  list.replaceChildren();
+  steps.forEach(step => {
+    const item = document.createElement("div");
+    item.className = `pilot-start-step${step.done ? " done" : ""}`;
+    const icon = document.createElement("i");
+    icon.textContent = step.done ? "✓" : String(steps.indexOf(step) + 1);
+    const text = document.createElement("span");
+    text.textContent = step.label;
+    item.append(icon, text);
+    list.append(item);
+  });
+}
+
+function openPilotStart(profile) {
+  if (!profile || profile.guest) return;
+  const start = readPilotStart(profile);
+  if (start.autoShown || start.dismissed) return;
+  savePilotStart(profile, { autoShown: true });
+  setTimeout(() => document.querySelector('.view-switch button[data-view="community"]')?.click(), 120);
+}
+
+document.querySelector("#pilotStartDismiss").addEventListener("click", () => {
+  const profile = readPrototypeSession();
+  if (profile && !profile.guest) savePilotStart(profile, { dismissed: true });
+  renderPilotStart(profile);
+});
+document.querySelector("#pilotStartCard").addEventListener("click", event => {
+  const action = event.target.closest("[data-pilot-start-action]")?.dataset.pilotStartAction;
+  if (!action) return;
+  const profile = readPrototypeSession();
+  if (!profile || profile.guest) { openAuth("login"); return; }
+  if (action === "profile") {
+    openPilotProfile();
+    setTimeout(() => document.querySelector("#editProfileButton")?.click(), 0);
+  }
+  if (action === "post") {
+    document.querySelector(".composer-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => document.querySelector("#postInput")?.focus(), 250);
+  }
+  if (action === "explore") {
+    document.querySelector('.feed-filters button[data-filter="nearby"]')?.click();
+    document.querySelector("#communityFeed")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  if (action === "spot") {
+    document.querySelector('.view-switch button[data-view="brief"]')?.click();
+    setTimeout(() => document.querySelector("#saveSpotButton")?.click(), 150);
+  }
+});
 
 function renderFollowers(follows = []) {
   const count = follows.length;
@@ -1970,6 +2053,11 @@ postButton.addEventListener("click", async () => {
   updatePostButton();
   postButton.textContent = originalText;
   updatePostButton();
+  const profile = readPrototypeSession();
+  if (profile && !profile.guest) {
+    savePilotStart(profile, { posted: true });
+    renderPilotStart(profile);
+  }
   showToast(backendReady ? "Your update was shared with the community" : "Your update was added to the prototype feed");
 });
 
